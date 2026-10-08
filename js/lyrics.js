@@ -109,8 +109,17 @@ const LyricsScene = (() => {
       if (el) el.textContent = text;
     });
 
-    const p = audio.play();
-    if (p !== undefined) p.catch(err => console.warn('Audio autoplay blocked:', err.message));
+    // Resume the shared audio context first (required on iOS after page load)
+    const sharedCtx = window._audioContext;
+    const doPlay = () => {
+      const p = audio.play();
+      if (p !== undefined) p.catch(err => console.warn('Audio autoplay blocked:', err.message));
+    };
+    if (sharedCtx && sharedCtx.state === 'suspended') {
+      sharedCtx.resume().then(doPlay).catch(doPlay);
+    } else {
+      doPlay();
+    }
 
     // 8-bit chiptune melody plays in sync with lyrics
     if (chipCtx) {
