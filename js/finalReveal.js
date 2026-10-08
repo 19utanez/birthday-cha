@@ -113,9 +113,9 @@ const FinalRevealScene = (() => {
     const slotBottom  = Math.max(msgTop, slotTop + H * 0.12);
     const slotH       = slotBottom - slotTop;
 
-    // Un-scaled bouquet spans roughly 0.26*H vertically around bCY0
-    const BOUQUET_H = H * 0.26;
-    const k = Math.max(0.55, Math.min(1, (slotH * 0.96) / BOUQUET_H));
+    // Un-scaled bouquet spans roughly 0.18*H vertically around bCY0
+    const BOUQUET_H = H * 0.18;
+    const k = Math.max(0.40, Math.min(0.82, (slotH * 0.90) / BOUQUET_H));
     const bCY0 = H * 0.46;                         // layout origin used below
     const bCY  = slotTop + slotH / 2 + H * 0.01;   // where it is finally placed
 
