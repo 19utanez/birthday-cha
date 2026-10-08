@@ -73,7 +73,10 @@ const FinalRevealScene = (() => {
       delay: 1.1,
     });
 
-    // 3. Start bouquet bloom after the room "lights on" settles
+    // 3. Fanfare starts just before the bouquet blooms
+    gsap.delayedCall(1.3, playBouquetFanfare);
+
+    // 4. Bouquet bloom starts shortly after fanfare intro
     gsap.delayedCall(1.6, startBouquetBloom);
   }
 
@@ -754,6 +757,105 @@ const FinalRevealScene = (() => {
 
     } catch(e) {
       console.warn('Idle music unavailable:', e.message);
+    }
+  }
+
+  // ── Bouquet intro fanfare ─────────────────────────────────────
+  // Cinematic build: soft shimmer → rising strings → bright bell chord
+  // Timed to feel like flowers bursting open (lasts ~5s)
+  function playBouquetFanfare() {
+    try {
+      const Ctx = window._audioContext ||
+        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+      if (!Ctx) return;
+      if (Ctx.state === 'suspended') Ctx.resume();
+
+      const master = Ctx.createGain();
+      master.gain.value = 0.30;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // ── 1. Opening shimmer — airy high tones sweep in ─────────
+      [1318.51, 1567.98, 1760.00, 2093.00, 2349.32].forEach((freq, i) => {
+        const d = i * 0.12;
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now + d);
+        env.gain.linearRampToValueAtTime(0.10, now + d + 0.06);
+        env.gain.exponentialRampToValueAtTime(0.001, now + d + 1.4);
+        osc.connect(env); env.connect(master);
+        osc.start(now + d); osc.stop(now + d + 1.5);
+      });
+
+      // ── 2. Rising string swell — triangle waves bloom upward ──
+      // C4 → E4 → G4 → B4 → D5 staggered every 0.22s
+      [261.63, 329.63, 392.00, 493.88, 587.33].forEach((freq, i) => {
+        const d = 0.5 + i * 0.22;
+        ['triangle', 'sine'].forEach((type, j) => {
+          const osc = Ctx.createOscillator();
+          const env = Ctx.createGain();
+          osc.type = type;
+          osc.frequency.value = freq;
+          const vol = j === 0 ? 0.40 : 0.18;
+          env.gain.setValueAtTime(0, now + d);
+          env.gain.linearRampToValueAtTime(vol, now + d + 0.18);
+          env.gain.setValueAtTime(vol * 0.85, now + d + 0.6);
+          env.gain.exponentialRampToValueAtTime(0.001, now + d + 2.2);
+          osc.connect(env); env.connect(master);
+          osc.start(now + d); osc.stop(now + d + 2.3);
+        });
+      });
+
+      // ── 3. Warm pad swell — C maj 7 chord blooms at 1.2s ─────
+      [130.81, 164.81, 196.00, 246.94, 261.63].forEach((freq, i) => {
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now + 1.2);
+        env.gain.linearRampToValueAtTime(0.20, now + 2.0);
+        env.gain.setValueAtTime(0.20, now + 3.5);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 5.2);
+        osc.connect(env); env.connect(master);
+        osc.start(now + 1.2); osc.stop(now + 5.3);
+      });
+
+      // ── 4. Bright bell chord at the peak (2.2s) ───────────────
+      // C5 E5 G5 C6 — all at once, fast attack, long bell decay
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        ['sine', 'triangle'].forEach((type, j) => {
+          const osc = Ctx.createOscillator();
+          const env = Ctx.createGain();
+          osc.type = type;
+          osc.frequency.value = freq;
+          const vol = j === 0 ? 0.50 : 0.20;
+          env.gain.setValueAtTime(0, now + 2.2);
+          env.gain.linearRampToValueAtTime(vol, now + 2.25);
+          env.gain.exponentialRampToValueAtTime(0.001, now + 4.8);
+          osc.connect(env); env.connect(master);
+          osc.start(now + 2.2); osc.stop(now + 4.9);
+        });
+      });
+
+      // ── 5. Cascading sparkle fall after the bell ──────────────
+      [2093.00, 1760.00, 1567.98, 1318.51, 1046.50].forEach((freq, i) => {
+        const d = 2.5 + i * 0.15;
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now + d);
+        env.gain.linearRampToValueAtTime(0.07, now + d + 0.02);
+        env.gain.exponentialRampToValueAtTime(0.001, now + d + 1.0);
+        osc.connect(env); env.connect(master);
+        osc.start(now + d); osc.stop(now + d + 1.1);
+      });
+
+    } catch(e) {
+      console.warn('Bouquet fanfare unavailable:', e.message);
     }
   }
 
