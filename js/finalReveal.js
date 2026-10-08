@@ -953,32 +953,30 @@ const BouquetPopup = (() => {
     if (!document.getElementById('click-me-btn')) {
       const btn = document.createElement('button');
       btn.id = 'click-me-btn';
-      btn.textContent = '🌸 Click me!';
+      btn.innerHTML = '💕<br><span style="font-size:0.6rem;letter-spacing:.04em;display:block;margin-top:2px;">Click me!</span>';
       btn.style.cssText = `
-        position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
-        z-index:60;
-        padding:13px 32px;
-        font-family:inherit; font-size:1.05rem; font-weight:600;
+        width:62px; height:62px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center; flex-direction:column;
+        padding:0; font-size:1.4rem; line-height:1;
+        font-family:inherit; font-weight:700;
         color:#c8506a;
         background:linear-gradient(135deg,#fff0f3 0%,#ffe4ec 50%,#fff0f3 100%);
         border:2px solid #d4af6a;
-        border-radius:50px;
         box-shadow:0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset;
         cursor:pointer;
         opacity:0;
         pointer-events:none;
         transition:opacity .5s ease, transform .18s ease, box-shadow .18s ease;
-        letter-spacing:.03em;
+        flex-shrink:0;
       `;
       btn.onmouseenter = () => {
-        btn.style.transform = 'translateX(-50%) scale(1.06)';
+        btn.style.transform = 'scale(1.06)';
         btn.style.boxShadow = '0 4px 28px rgba(200,80,106,0.30), 0 0 0 1px rgba(212,175,106,0.35) inset';
       };
       btn.onmouseleave = () => {
-        btn.style.transform = 'translateX(-50%) scale(1)';
+        btn.style.transform = 'scale(1)';
         btn.style.boxShadow = '0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset';
       };
-      document.body.appendChild(btn);
     }
 
     if (!document.getElementById('bouquet-overlay')) {
@@ -1470,7 +1468,7 @@ const BouquetPopup = (() => {
       if (bt <= 0) return;
       ctx.save();
       ctx.globalAlpha = easeOut(bt) * 0.92;
-      drawBabysBreath(cx + bb.dx, cy + bb.dy, bb.spread * bt);
+      drawBabysBreath(cx + bb.dx, cy + bb.dy, bb.spread);
       ctx.restore();
     });
 
@@ -1583,10 +1581,12 @@ const BouquetPopup = (() => {
   // ── Baby's breath: branching clusters of tiny white dots ─────────
   function drawBabysBreath(cx, cy, spread) {
     if (spread <= 0) return;
-    const branchCount = 5 + Math.floor(spread * 0.3);
+    const branchCount = 6;
+    // Fixed offsets per branch (no random — called every frame)
+    const lenFracs = [0.7, 0.9, 0.6, 0.85, 0.75, 0.65];
     for (let b = 0; b < branchCount; b++) {
       const baseAngle = (b / branchCount) * Math.PI * 2;
-      const blen      = spread * (0.5 + Math.random() * 0.5);
+      const blen      = spread * lenFracs[b];
       const bx        = cx + Math.cos(baseAngle) * blen;
       const by        = cy + Math.sin(baseAngle) * blen;
 
@@ -1598,14 +1598,17 @@ const BouquetPopup = (() => {
       ctx.lineWidth   = 0.8;
       ctx.stroke();
 
-      // Tiny flowers at branch tips (2–4 dots)
-      const dotCount = 2 + Math.floor(Math.random() * 3);
+      // Tiny flowers at branch tips — fixed offsets, no random
+      const dotOffsets = [
+        [0, 0, 2.5], [-0.5, 0.5, 2.0], [0.5, 0.4, 1.8],
+      ];
+      const dotCount = 3;
       for (let d = 0; d < dotCount; d++) {
-        const dangle = baseAngle + (Math.random() - 0.5) * 1.4;
-        const dlen   = spread * 0.18 * Math.random();
+        const [ox, oy, dr] = dotOffsets[d];
+        const dangle = baseAngle + ox * 0.7;
+        const dlen   = spread * (0.12 + oy * 0.06);
         const dx     = bx + Math.cos(dangle) * dlen;
         const dy     = by + Math.sin(dangle) * dlen;
-        const dr     = 2.0 + Math.random() * 1.8;
 
         ctx.beginPath();
         ctx.arc(dx, dy, dr, 0, Math.PI * 2);
