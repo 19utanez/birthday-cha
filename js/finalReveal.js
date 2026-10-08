@@ -684,12 +684,9 @@ const FinalRevealScene = (() => {
         { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.2 }
       );
 
-      // Also make btn-row visible and ensure correct position
+      // Children handle their own pointer events
       const row2 = document.getElementById('btn-row');
-      if (row2) {
-        row2.style.pointerEvents = 'none'; // children handle their own
-        row2.style.bottom = '64px';
-      }
+      if (row2) row2.style.pointerEvents = 'none';
     }
     playIdleMusic();
 
@@ -953,15 +950,19 @@ const BouquetPopup = (() => {
         row = document.createElement('div');
         row.id = 'btn-row';
         row.style.cssText = `
-          position:fixed; bottom:64px; left:50%; transform:translateX(-50%);
-          z-index:60; display:flex; align-items:center; gap:18px;
-          pointer-events:none;
+          display:flex; align-items:center; justify-content:center; gap:18px;
+          width:100%; padding:24px 0 36px;
+          pointer-events:none; z-index:60;
         `;
-      } else {
-        row.style.bottom = '64px';
       }
       if (!document.getElementById('click-me-btn')) {
-        document.body.appendChild(row);
+        // Append AFTER the birthday message so buttons sit below it in flow
+        const msgEl = document.getElementById('birthday-message');
+        if (msgEl && msgEl.parentNode) {
+          msgEl.parentNode.insertBefore(row, msgEl.nextSibling);
+        } else {
+          document.body.appendChild(row);
+        }
 
         // Move existing replay-btn inside the row if it exists
         const existingReplay = document.getElementById('replay-btn');
