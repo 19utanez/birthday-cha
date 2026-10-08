@@ -120,8 +120,8 @@ const FinalRevealScene = (() => {
         if (msgEl) {
           const msgTop = msgEl.getBoundingClientRect().top;
           const gap = msgTop - bouquetBottom;
-          if (gap > 2) {
-            msgEl.style.transform = `translateY(-${gap - 2}px)`;
+          if (gap > 0) {
+            msgEl.style.cssText += `transform:translateY(-${gap}px) !important; margin-top:0 !important;`;
           }
         }
       });
@@ -684,9 +684,12 @@ const FinalRevealScene = (() => {
         { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.2 }
       );
 
-      // Also make btn-row visible
+      // Also make btn-row visible and ensure correct position
       const row2 = document.getElementById('btn-row');
-      if (row2) row2.style.pointerEvents = 'none'; // children handle their own
+      if (row2) {
+        row2.style.pointerEvents = 'none'; // children handle their own
+        row2.style.bottom = '64px';
+      }
     }
     playIdleMusic();
 
@@ -950,10 +953,14 @@ const BouquetPopup = (() => {
         row = document.createElement('div');
         row.id = 'btn-row';
         row.style.cssText = `
-          position:fixed; bottom:52px; left:50%; transform:translateX(-50%);
+          position:fixed; bottom:64px; left:50%; transform:translateX(-50%);
           z-index:60; display:flex; align-items:center; gap:18px;
           pointer-events:none;
         `;
+      } else {
+        row.style.bottom = '64px';
+      }
+      if (!document.getElementById('click-me-btn')) {
         document.body.appendChild(row);
 
         // Move existing replay-btn inside the row if it exists
