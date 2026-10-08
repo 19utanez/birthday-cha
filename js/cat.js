@@ -33,8 +33,8 @@ const CatScene = (() => {
   let screenW    = 0;
   let screenH    = 0;
 
-  // Bob rhythm — matches chiptune BEAT = 0.46s
-  const BEAT_SEC = 0.46;
+  // Bob rhythm — matches chiptune BEAT = 0.58s
+  const BEAT_SEC = 0.58;
   const BOB_RATE = (Math.PI * 2) / BEAT_SEC;  // rad/s
 
   let walkPhase     = 0;
