@@ -1346,222 +1346,125 @@ const BouquetPopup = (() => {
     ctx.restore();
   }
 
-  // ── Handle ribbon / cone stem accessory ─────────────────────────
-  // 3 styles cycle per open (openCount already incremented before draw):
-  //   0 → diagonal satin ribbon wrap (pink + gold)
-  //   1 → pearl bead string spiral
-  //   2 → gold twine spiral + mini accent bow
+  // ── Big cute pink ribbon bow on the cone handle ─────────────────
   function drawHandleRibbon(cx, startY, alpha) {
     if (alpha <= 0) return;
 
-    // Cone stem geometry (matches drawWrap): narrows from base to tip
-    const base   = startY;                  // just below the bow
-    const tip    = H * 0.97;
-    const tipHW  = W * 0.024;              // half-width at tip
-    const baseHW = W * 0.40 * 0.18;       // half-width at this start point (narrowed)
+    // Place the bow centered on the cone, about 1/3 down the handle
+    const bx = cx;
+    const by = startY + (H * 0.97 - startY) * 0.22;
 
-    // style index uses openCount-1 (already incremented in open())
-    const style = (openCount - 1) % 3;
+    // Scale relative to cone width at that point
+    const coneHW = W * 0.40 * 0.14;
+    const r = coneHW * 2.8;   // big bow
+
+    const pink      = C.bowPink;
+    const pinkLight = C.bowLight;
+    const pinkDark  = C.bowDark;
 
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    if (style === 0) {
-      // ── Style 0: diagonal satin ribbon wrap ──────────────────────
-      // Alternating pink satin + gold satin diagonal bands spiralling down
-      const bands = 8;
-      for (let i = 0; i < bands; i++) {
-        const t0 = i / bands;
-        const t1 = (i + 0.55) / bands;
-        const y0 = base + (tip - base) * t0;
-        const y1 = base + (tip - base) * Math.min(t1, 1);
-        const hw0 = baseHW + (tipHW - baseHW) * t0;
-        const hw1 = baseHW + (tipHW - baseHW) * Math.min(t1, 1);
-
-        // Alternate colors: odd = pink satin, even = gold
-        const isGold = i % 2 === 0;
-        const mainCol = isGold ? C.ribbonGold : C.bowPink;
-        const hiCol   = isGold ? C.ribbonHi   : C.bowLight;
-        const shaCol  = isGold ? C.ribbonSha  : C.bowDark;
-
-        // Band shape: diagonal parallelogram
-        const offset = hw0 * 0.6;  // diagonal shift
-        ctx.beginPath();
-        ctx.moveTo(cx - hw0 + offset, y0);
-        ctx.lineTo(cx + hw0 + offset, y0);
-        ctx.lineTo(cx + hw1 - offset, y1);
-        ctx.lineTo(cx - hw1 - offset, y1);
-        ctx.closePath();
-
-        const g = ctx.createLinearGradient(cx - hw0, 0, cx + hw0, 0);
-        g.addColorStop(0,   shaCol);
-        g.addColorStop(0.3, mainCol);
-        g.addColorStop(0.55, hiCol);
-        g.addColorStop(0.8, mainCol);
-        g.addColorStop(1,   shaCol);
-        ctx.fillStyle = g;
-        ctx.globalAlpha = alpha * 0.72;
-        ctx.fill();
-
-        // Satin sheen highlight line
-        ctx.beginPath();
-        ctx.moveTo(cx + offset * 0.3, y0 + (y1 - y0) * 0.15);
-        ctx.lineTo(cx + offset * 0.3, y0 + (y1 - y0) * 0.85);
-        ctx.strokeStyle = hiCol;
-        ctx.lineWidth   = hw0 * 0.22;
-        ctx.lineCap     = 'round';
-        ctx.globalAlpha = alpha * 0.30;
-        ctx.stroke();
-      }
-
-    } else if (style === 1) {
-      // ── Style 1: pearl bead string ───────────────────────────────
-      const beadCount = 16;
-      for (let i = 0; i < beadCount; i++) {
-        const fr  = i / (beadCount - 1);
-        const y   = base + (tip - base) * fr;
-        const hw  = baseHW + (tipHW - baseHW) * fr;
-        // Slight sine oscillation across the stem
-        const osc = Math.sin(fr * Math.PI * 5) * hw * 0.55;
-        const x   = cx + osc;
-        const r   = Math.max(2, hw * 0.28 * (1 - fr * 0.5));
-
-        // Pearl sphere shading
-        const pg = ctx.createRadialGradient(x - r*0.3, y - r*0.3, 0, x, y, r);
-        pg.addColorStop(0,   '#ffffff');
-        pg.addColorStop(0.4, '#f8f0f8');
-        pg.addColorStop(1,   '#d8c8dc');
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle   = pg;
-        ctx.globalAlpha = alpha * 0.90;
-        ctx.fill();
-
-        // Connect beads with a thin cord
-        if (i > 0) {
-          const fr2  = (i - 1) / (beadCount - 1);
-          const y2   = base + (tip - base) * fr2;
-          const hw2  = baseHW + (tipHW - baseHW) * fr2;
-          const osc2 = Math.sin(fr2 * Math.PI * 5) * hw2 * 0.55;
-          ctx.beginPath();
-          ctx.moveTo(cx + osc2, y2);
-          ctx.lineTo(x, y);
-          ctx.strokeStyle = 'rgba(212,175,212,0.50)';
-          ctx.lineWidth   = 0.7;
-          ctx.globalAlpha = alpha * 0.60;
-          ctx.stroke();
-        }
-      }
-
-    } else {
-      // ── Style 2: gold twine spiral + mini accent bow ──────────────
-      const turns = 5;
-      const pts   = turns * 24;
+    // Ribbon tails — two curving down-left and down-right
+    const tails = [
+      { cp1x: bx - r*0.55, cp1y: by + r*0.70, ex: bx - r*0.80, ey: by + r*1.30 },
+      { cp1x: bx + r*0.30, cp1y: by + r*0.90, ex: bx + r*0.60, ey: by + r*1.45 },
+      { cp1x: bx - r*0.10, cp1y: by + r*0.75, ex: bx - r*0.25, ey: by + r*1.20 },
+    ];
+    tails.forEach(({ cp1x, cp1y, ex, ey }) => {
       ctx.beginPath();
-      for (let i = 0; i <= pts; i++) {
-        const fr  = i / pts;
-        const y   = base + (tip - base) * fr;
-        const hw  = baseHW + (tipHW - baseHW) * fr;
-        const ang = fr * Math.PI * 2 * turns;
-        const x   = cx + Math.cos(ang) * hw * 0.65;
-        if (i === 0) ctx.moveTo(x, y);
-        else         ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = C.ribbonGold;
-      ctx.lineWidth   = Math.max(1.5, baseHW * 0.12);
+      ctx.moveTo(bx, by + r * 0.14);
+      ctx.quadraticCurveTo(cp1x, cp1y, ex, ey);
+      ctx.strokeStyle = pink;
+      ctx.lineWidth   = r * 0.26;
       ctx.lineCap     = 'round';
-      ctx.lineJoin    = 'round';
       ctx.globalAlpha = alpha * 0.82;
       ctx.stroke();
-
-      // Second twine pass for sheen
-      ctx.beginPath();
-      for (let i = 0; i <= pts; i++) {
-        const fr  = i / pts;
-        const y   = base + (tip - base) * fr;
-        const hw  = baseHW + (tipHW - baseHW) * fr;
-        const ang = fr * Math.PI * 2 * turns;
-        const x   = cx + Math.cos(ang) * hw * 0.65;
-        if (i === 0) ctx.moveTo(x, y);
-        else         ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = C.ribbonHi;
-      ctx.lineWidth   = Math.max(0.6, baseHW * 0.045);
+      // sheen
+      ctx.strokeStyle = pinkLight;
+      ctx.lineWidth   = r * 0.08;
       ctx.globalAlpha = alpha * 0.38;
       ctx.stroke();
+    });
 
-      // Mini accent bow at 1/3 down the stem
-      const bx = cx;
-      const by = base + (tip - base) * 0.28;
-      const br = baseHW * 0.80;
-      ctx.globalAlpha = alpha * 0.88;
-
-      // Mini tails
-      [[-0.30, 0.55], [0.30, 0.55]].forEach(([dx, dy]) => {
-        ctx.beginPath();
-        ctx.moveTo(bx, by + br * 0.10);
-        ctx.quadraticCurveTo(bx + br * dx * 1.5, by + br * dy, bx + br * dx * 2.2, by + br * dy * 1.5);
-        ctx.strokeStyle = C.ribbonGold;
-        ctx.lineWidth   = br * 0.28;
-        ctx.lineCap     = 'round';
-        ctx.stroke();
-        ctx.strokeStyle = C.ribbonHi;
-        ctx.lineWidth   = br * 0.09;
-        ctx.globalAlpha = alpha * 0.35;
-        ctx.stroke();
-        ctx.globalAlpha = alpha * 0.88;
-      });
-
-      // Mini loops
-      [-1, 1].forEach(side => {
-        ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.bezierCurveTo(
-          bx + side * br * 0.20, by - br * 0.45,
-          bx + side * br * 1.45, by - br * 0.72,
-          bx + side * br * 1.25, by + br * 0.08
-        );
-        ctx.bezierCurveTo(
-          bx + side * br * 1.05, by + br * 0.48,
-          bx + side * br * 0.36, by + br * 0.32,
-          bx, by
-        );
-        const lg = ctx.createRadialGradient(
-          bx + side * br * 0.65, by - br * 0.20, 0,
-          bx + side * br * 0.65, by - br * 0.20, br * 1.0
-        );
-        lg.addColorStop(0,   C.ribbonHi);
-        lg.addColorStop(0.4, C.ribbonGold);
-        lg.addColorStop(1,   C.ribbonSha);
-        ctx.fillStyle   = lg;
-        ctx.globalAlpha = alpha * 0.88;
-        ctx.fill();
-        // Sheen
-        ctx.beginPath();
-        ctx.moveTo(bx + side * br * 0.14, by - br * 0.06);
-        ctx.bezierCurveTo(
-          bx + side * br * 0.50, by - br * 0.44,
-          bx + side * br * 1.10, by - br * 0.56,
-          bx + side * br * 1.18, by + br * 0.02
-        );
-        ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-        ctx.lineWidth   = br * 0.11;
-        ctx.lineCap     = 'round';
-        ctx.globalAlpha = alpha * 0.40;
-        ctx.stroke();
-      });
-
-      // Mini knot
-      ctx.globalAlpha = alpha * 0.88;
-      const kg = ctx.createRadialGradient(bx, by, 0, bx, by, br * 0.26);
-      kg.addColorStop(0,   '#ffffff');
-      kg.addColorStop(0.4, C.ribbonHi);
-      kg.addColorStop(1,   C.ribbonGold);
+    // Big loop helper
+    const drawBigLoop = (side) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.ellipse(bx, by, br * 0.24, br * 0.19, 0, 0, Math.PI * 2);
-      ctx.fillStyle = kg;
+      ctx.moveTo(bx, by);
+      ctx.bezierCurveTo(
+        bx + side * r * 0.22, by - r * 0.60,
+        bx + side * r * 2.10, by - r * 1.00,
+        bx + side * r * 1.80, by + r * 0.10
+      );
+      ctx.bezierCurveTo(
+        bx + side * r * 1.52, by + r * 0.72,
+        bx + side * r * 0.44, by + r * 0.46,
+        bx, by
+      );
+
+      const g = ctx.createRadialGradient(
+        bx + side * r * 0.90, by - r * 0.30, 0,
+        bx + side * r * 0.90, by - r * 0.30, r * 1.50
+      );
+      g.addColorStop(0,   pinkLight);
+      g.addColorStop(0.35, pink);
+      g.addColorStop(1,   pinkDark);
+      ctx.fillStyle   = g;
       ctx.fill();
-    }
+
+      // Satin sheen
+      ctx.beginPath();
+      ctx.moveTo(bx + side * r * 0.16, by - r * 0.10);
+      ctx.bezierCurveTo(
+        bx + side * r * 0.68, by - r * 0.62,
+        bx + side * r * 1.58, by - r * 0.78,
+        bx + side * r * 1.70, by + r * 0.04
+      );
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth   = r * 0.16;
+      ctx.lineCap     = 'round';
+      ctx.globalAlpha = alpha * 0.45;
+      ctx.stroke();
+
+      // Second sheen streak
+      ctx.beginPath();
+      ctx.moveTo(bx + side * r * 0.32, by - r * 0.05);
+      ctx.bezierCurveTo(
+        bx + side * r * 0.80, by - r * 0.44,
+        bx + side * r * 1.30, by - r * 0.52,
+        bx + side * r * 1.40, by + r * 0.12
+      );
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth   = r * 0.08;
+      ctx.globalAlpha = alpha * 0.30;
+      ctx.stroke();
+
+      ctx.restore();
+    };
+
+    drawBigLoop(-1);
+    drawBigLoop(1);
+
+    // Center knot — round puffy shape
+    const kg = ctx.createRadialGradient(bx, by - r * 0.06, 0, bx, by, r * 0.42);
+    kg.addColorStop(0,   '#ffffff');
+    kg.addColorStop(0.25, pinkLight);
+    kg.addColorStop(0.65, pink);
+    kg.addColorStop(1,   pinkDark);
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, r * 0.36, r * 0.30, 0, 0, Math.PI * 2);
+    ctx.fillStyle = kg;
+    ctx.fill();
+
+    // Tiny white highlight dot on knot
+    ctx.beginPath();
+    ctx.arc(bx - r * 0.09, by - r * 0.10, r * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle   = 'rgba(255,255,255,0.70)';
+    ctx.globalAlpha = alpha * 0.80;
+    ctx.fill();
 
     ctx.restore();
   }
