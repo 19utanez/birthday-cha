@@ -33,8 +33,8 @@ const CatScene = (() => {
   let screenW    = 0;
   let screenH    = 0;
 
-  // Bob rhythm — matches chiptune BEAT = 0.58s
-  const BEAT_SEC = 0.58;
+  // Bob rhythm — matches chiptune BEAT = 0.46s (slightly faster walk)
+  const BEAT_SEC = 0.40;
   const BOB_RATE = (Math.PI * 2) / BEAT_SEC;  // rad/s
 
   let walkPhase     = 0;
@@ -75,8 +75,9 @@ const CatScene = (() => {
     const catH   = CAT_H_BASE * scale;
     const rect   = lineEl.getBoundingClientRect();
 
-    line.startX    = rect.left  - catW * 0.5;
-    line.endX      = rect.right + catW * 0.5;
+    // Start just before the text, end just at the text edge — no walking off-screen
+    line.startX    = rect.left  - catW * 0.3;
+    line.endX      = rect.right - catW * 0.1;
     line.wallStart = performance.now();
     line.durMs     = durSecs * 1000;
     line.active    = true;
@@ -123,6 +124,7 @@ const CatScene = (() => {
     if (line.active && line.durMs > 0) {
       const elapsed = now - line.wallStart;
       const t = clamp(elapsed / line.durMs, 0, 1);
+      // t clamped to 1 so cat stops exactly at line end, never past it
       state.x = line.startX + (line.endX - line.startX) * t;
     }
 
