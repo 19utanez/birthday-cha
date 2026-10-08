@@ -1116,8 +1116,8 @@ const BouquetPopup = (() => {
     canvas  = document.getElementById('bouquet-popup-canvas');
     if (!overlay || !canvas) return;
 
-    const cardW = Math.min(window.innerWidth * 0.92, 420);
-    const cardH = Math.round(cardW * 1.18);
+    const cardW = Math.min(window.innerWidth * 0.84, 360);
+    const cardH = Math.round(cardW * 1.05);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = cardW; H = cardH;
     canvas.width  = Math.round(W * dpr);
@@ -1164,9 +1164,9 @@ const BouquetPopup = (() => {
   // ── Master bouquet layout (Korean-style: wide kraft wrap, white collar, peonies + baby's breath) ──
   function drawBouquet(t) {
     const cx = W * 0.50;
-    // Bouquet sits in upper 65% of canvas; stem/wrap occupies lower 35%
-    const flowerCY = H * 0.42;
-    const wrapTopY = H * 0.52;  // where the wrap collar starts
+    // Bouquet sits in upper 55% of canvas; smaller and higher up
+    const flowerCY = H * 0.34;
+    const wrapTopY = H * 0.44;  // where the wrap collar starts
 
     drawKraftWrap(cx, wrapTopY, t);
     drawWhiteCollar(cx, wrapTopY, t);
@@ -1182,16 +1182,16 @@ const BouquetPopup = (() => {
     ctx.save();
     ctx.globalAlpha = ea;
 
-    const bottomY = H * 0.99;
+    const bottomY = H * 0.90;
     // Fan: 7 sheets angled outward like in the reference
     const sheets = [
-      { angle: -0.52, wTop: W*0.10, wBot: W*0.065 },
-      { angle: -0.30, wTop: W*0.12, wBot: W*0.075 },
-      { angle: -0.12, wTop: W*0.13, wBot: W*0.080 },
-      { angle:  0.00, wTop: W*0.14, wBot: W*0.085 },
-      { angle:  0.12, wTop: W*0.13, wBot: W*0.080 },
-      { angle:  0.30, wTop: W*0.12, wBot: W*0.075 },
-      { angle:  0.52, wTop: W*0.10, wBot: W*0.065 },
+      { angle: -0.50, wTop: W*0.09, wBot: W*0.055 },
+      { angle: -0.28, wTop: W*0.10, wBot: W*0.062 },
+      { angle: -0.10, wTop: W*0.11, wBot: W*0.068 },
+      { angle:  0.00, wTop: W*0.12, wBot: W*0.072 },
+      { angle:  0.10, wTop: W*0.11, wBot: W*0.068 },
+      { angle:  0.28, wTop: W*0.10, wBot: W*0.062 },
+      { angle:  0.50, wTop: W*0.09, wBot: W*0.055 },
     ];
 
     // Pink kraft base colour: muted dusty rose, same as reference
@@ -1246,10 +1246,10 @@ const BouquetPopup = (() => {
 
     // Gold curl ribbons on outer edges (reference has curling gold ribbon strips)
     const curlCols = [
-      { x: cx - W*0.42, startY: topY + H*0.03, flip: false },
-      { x: cx + W*0.40, startY: topY + H*0.02, flip: true  },
-      { x: cx - W*0.30, startY: topY + H*0.08, flip: false },
-      { x: cx + W*0.28, startY: topY + H*0.07, flip: true  },
+      { x: cx - W*0.36, startY: topY + H*0.02, flip: false },
+      { x: cx + W*0.34, startY: topY + H*0.02, flip: true  },
+      { x: cx - W*0.24, startY: topY + H*0.06, flip: false },
+      { x: cx + W*0.22, startY: topY + H*0.06, flip: true  },
     ];
     curlCols.forEach(c => drawGoldCurl(c.x, c.startY, c.flip, ea));
 
@@ -1324,10 +1324,10 @@ const BouquetPopup = (() => {
   function drawEucalyptus(cx, cy, t) {
     const ea = easeOut(clampB(t / 0.55, 0, 1));
     const sprigs = [
-      { dx: -W*0.12, dy: -H*0.02, angle: -0.18, len: H*0.26 },
-      { dx:  W*0.10, dy: -H*0.00, angle:  0.14, len: H*0.24 },
-      { dx: -W*0.24, dy:  H*0.04, angle: -0.30, len: H*0.20 },
-      { dx:  W*0.22, dy:  H*0.03, angle:  0.28, len: H*0.22 },
+      { dx: -W*0.10, dy: -H*0.02, angle: -0.18, len: H*0.20 },
+      { dx:  W*0.09, dy: -H*0.00, angle:  0.14, len: H*0.18 },
+      { dx: -W*0.20, dy:  H*0.03, angle: -0.30, len: H*0.16 },
+      { dx:  W*0.18, dy:  H*0.02, angle:  0.28, len: H*0.17 },
     ];
 
     sprigs.forEach((sp, si) => {
@@ -1378,12 +1378,12 @@ const BouquetPopup = (() => {
   // ── Baby's breath — tiny white cloud clusters ────────────────────────
   function drawBabysBreath(cx, cy, t) {
     const clusters = [
-      { dx: -W*0.18, dy: -H*0.04, count: 28, r: W*0.095 },
-      { dx:  W*0.16, dy: -H*0.02, count: 24, r: W*0.080 },
-      { dx:  W*0.02, dy:  H*0.00, count: 20, r: W*0.070 },
-      { dx: -W*0.08, dy:  H*0.03, count: 18, r: W*0.060 },
-      { dx:  W*0.28, dy:  H*0.02, count: 14, r: W*0.050 },
-      { dx: -W*0.30, dy:  H*0.04, count: 12, r: W*0.045 },
+      { dx: -W*0.15, dy: -H*0.04, count: 22, r: W*0.075 },
+      { dx:  W*0.13, dy: -H*0.02, count: 18, r: W*0.065 },
+      { dx:  W*0.02, dy:  H*0.00, count: 16, r: W*0.055 },
+      { dx: -W*0.07, dy:  H*0.02, count: 14, r: W*0.048 },
+      { dx:  W*0.22, dy:  H*0.01, count: 10, r: W*0.038 },
+      { dx: -W*0.24, dy:  H*0.03, count:  9, r: W*0.035 },
     ];
 
     // Seeded positions so they don't move each frame
@@ -1423,13 +1423,13 @@ const BouquetPopup = (() => {
     // Reference: 6 big hot-pink/blush peonies arranged in a slightly arced cluster
     const peonies = [
       // back row (drawn first, slightly higher and smaller)
-      { dx: -W*0.20, dy: -H*0.07, sz: s*0.140, rot: -0.20, col: '#e87098', delay: 0.05 },
-      { dx:  W*0.00, dy: -H*0.10, sz: s*0.145, rot:  0.10, col: '#f090b0', delay: 0.08 },
-      { dx:  W*0.21, dy: -H*0.07, sz: s*0.138, rot:  0.22, col: '#e06888', delay: 0.05 },
+      { dx: -W*0.18, dy: -H*0.06, sz: s*0.110, rot: -0.20, col: '#e87098', delay: 0.05 },
+      { dx:  W*0.00, dy: -H*0.09, sz: s*0.115, rot:  0.10, col: '#f090b0', delay: 0.08 },
+      { dx:  W*0.19, dy: -H*0.06, sz: s*0.108, rot:  0.22, col: '#e06888', delay: 0.05 },
       // front row (bigger, lower, more prominent)
-      { dx: -W*0.25, dy:  H*0.03, sz: s*0.155, rot: -0.15, col: '#e87098', delay: 0.18 },
-      { dx:  W*0.01, dy:  H*0.02, sz: s*0.168, rot:  0.05, col: '#f090b8', delay: 0.22 },
-      { dx:  W*0.25, dy:  H*0.03, sz: s*0.150, rot:  0.18, col: '#d86080', delay: 0.18 },
+      { dx: -W*0.22, dy:  H*0.02, sz: s*0.122, rot: -0.15, col: '#e87098', delay: 0.18 },
+      { dx:  W*0.01, dy:  H*0.01, sz: s*0.132, rot:  0.05, col: '#f090b8', delay: 0.22 },
+      { dx:  W*0.22, dy:  H*0.02, sz: s*0.118, rot:  0.18, col: '#d86080', delay: 0.18 },
     ];
 
     peonies.forEach(p => {
