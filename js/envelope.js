@@ -143,98 +143,50 @@ const EnvelopeScene = (() => {
       if (!Ctx) return;
 
       const master = Ctx.createGain();
-      master.gain.value = 0.55;
+      master.gain.value = 0.38;
       master.connect(Ctx.destination);
 
-      const sr  = Ctx.sampleRate;
       const now = Ctx.currentTime;
+      const sr  = Ctx.sampleRate;
 
-      // Helper: generate a noise buffer of given seconds
-      function makeNoiseBuf(secs) {
-        const len = Math.ceil(sr * secs);
-        const buf = Ctx.createBuffer(1, len, sr);
-        const d   = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-        return buf;
-      }
+      // Short paper rustle burst
+      const noiseBuf = Ctx.createBuffer(1, Math.ceil(sr * 0.18), sr);
+      const nd = noiseBuf.getChannelData(0);
+      for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+      const noise = Ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+      const bp = Ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 1.0;
+      const ng = Ctx.createGain();
+      ng.gain.setValueAtTime(0, now);
+      ng.gain.linearRampToValueAtTime(0.55, now + 0.02);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      noise.connect(bp); bp.connect(ng); ng.connect(master);
+      noise.start(now); noise.stop(now + 0.20);
 
-      // Helper: play a shaped noise burst
-      function noiseShot(startT, durSecs, freqLo, freqHi, peakT, peakGain, decayEnd) {
-        const src = Ctx.createBufferSource();
-        src.buffer = makeNoiseBuf(durSecs + 0.05);
+      // Magical shimmer chord: C5 E5 G5 B5 ascending
+      [[523.25, 0.00], [659.25, 0.10], [783.99, 0.20], [987.77, 0.32]].forEach(([freq, delay]) => {
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now + delay);
+        env.gain.linearRampToValueAtTime(0.28, now + delay + 0.03);
+        env.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.8);
+        osc.connect(env); env.connect(master);
+        osc.start(now + delay); osc.stop(now + delay + 1.9);
 
-        // Two bandpass filters in series to narrow the spectrum
-        const bp1 = Ctx.createBiquadFilter();
-        bp1.type = 'bandpass';
-        bp1.frequency.setValueAtTime(freqLo, startT);
-        bp1.frequency.linearRampToValueAtTime(freqHi, startT + durSecs);
-        bp1.Q.value = 1.2;
-
-        const bp2 = Ctx.createBiquadFilter();
-        bp2.type  = 'highshelf';
-        bp2.frequency.value = 3000;
-        bp2.gain.value = -6;
-
-        const g = Ctx.createGain();
-        g.gain.setValueAtTime(0, startT);
-        g.gain.linearRampToValueAtTime(peakGain, startT + peakT);
-        g.gain.exponentialRampToValueAtTime(0.001, startT + decayEnd);
-
-        src.connect(bp1); bp1.connect(bp2); bp2.connect(g); g.connect(master);
-        src.start(startT);
-        src.stop(startT + durSecs + 0.05);
-      }
-
-      // 1. Wax seal crack — dull thud (low sine sweep) + sharp click (short noise)
-      const sealOsc  = Ctx.createOscillator();
-      const sealGain = Ctx.createGain();
-      sealOsc.type = 'sine';
-      sealOsc.frequency.setValueAtTime(220, now);
-      sealOsc.frequency.exponentialRampToValueAtTime(55, now + 0.09);
-      sealGain.gain.setValueAtTime(0.85, now);
-      sealGain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
-      sealOsc.connect(sealGain); sealGain.connect(master);
-      sealOsc.start(now); sealOsc.stop(now + 0.11);
-
-      // High-freq click component of the crack
-      noiseShot(now, 0.04, 3000, 6000, 0.005, 0.9, 0.04);
-
-      // 2. Flap peel — slow friction scrape: noise sweeping 600→1800Hz over 0.35s
-      //    Models paper adhesive tearing away gradually
-      noiseShot(now + 0.10, 0.38, 600, 1800, 0.06, 0.42, 0.38);
-
-      // 3. Mid-peel crinkle — slight pitch spike as flap crosses 90°
-      noiseShot(now + 0.30, 0.12, 1200, 3000, 0.02, 0.55, 0.12);
-
-      // 4. Flap lands open — soft paper flutter (fast decay, low-mid freq)
-      noiseShot(now + 0.46, 0.18, 300, 900, 0.015, 0.48, 0.18);
-
-      // 5. Letter slide out — paper-on-paper drag: smooth 800→400Hz descending
-      //    Slightly longer, gentle envelope, mimics letter being pulled out slowly
-      {
-        const src = Ctx.createBufferSource();
-        src.buffer = makeNoiseBuf(0.50);
-        const bp = Ctx.createBiquadFilter();
-        bp.type = 'bandpass';
-        bp.frequency.setValueAtTime(800, now + 0.70);
-        bp.frequency.linearRampToValueAtTime(350, now + 1.20);
-        bp.Q.value = 0.9;
-        const lp = Ctx.createBiquadFilter();
-        lp.type = 'lowpass';
-        lp.frequency.value = 2200;
-        const g = Ctx.createGain();
-        g.gain.setValueAtTime(0, now + 0.70);
-        g.gain.linearRampToValueAtTime(0.38, now + 0.78);
-        g.gain.setValueAtTime(0.35, now + 1.05);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 1.22);
-        src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(master);
-        src.start(now + 0.70);
-        src.stop(now + 1.22);
-      }
-
-      // 6. Letter unfold — two quick paper crease snaps (short sharp noise spikes)
-      noiseShot(now + 1.10, 0.06, 1000, 4000, 0.008, 0.65, 0.055);
-      noiseShot(now + 1.18, 0.05, 800,  3500, 0.007, 0.50, 0.048);
+        // Subtle triangle harmonic for warmth
+        const osc2 = Ctx.createOscillator();
+        const env2 = Ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.value = freq;
+        env2.gain.setValueAtTime(0, now + delay);
+        env2.gain.linearRampToValueAtTime(0.10, now + delay + 0.03);
+        env2.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.4);
+        osc2.connect(env2); env2.connect(master);
+        osc2.start(now + delay); osc2.stop(now + delay + 1.5);
+      });
 
     } catch(e) {
       console.warn('Envelope sound failed:', e.message);
