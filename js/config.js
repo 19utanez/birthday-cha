@@ -52,7 +52,7 @@ const CONFIG = {
     { showAt:  0.50, holdFor: 3.48 }, // "Happy birthday to you,"    (6 beats × 0.58s)
     { showAt:  3.98, holdFor: 3.48 }, // "Happy birthday to you,"    (6 beats × 0.58s)
     { showAt:  7.46, holdFor: 4.06 }, // "Happy birthday dear ___,"  (7 beats × 0.58s)
-    { showAt: 11.52, holdFor: 4.06 }, // "Happy birthday to you."    (7 beats × 0.58s)
+    { showAt: 11.52, holdFor: 3.48 }, // "Happy birthday to you."    (6 beats × 0.58s)
   ],
 
   // ── Flower animation settings (used in Phase 2) ────────────────
