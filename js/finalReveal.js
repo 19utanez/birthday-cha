@@ -113,9 +113,18 @@ const FinalRevealScene = (() => {
     const bCY0 = H * 0.46;  // layout origin
     const bCY  = frameBottom + H * 0.075;  // sit close under the frame
 
-    // Pull the message up to close the gap below the bouquet
-    const bouquetBottom = frameBottom + H * 0.14;
-    if (msgEl) msgEl.style.marginTop = Math.max(0, bouquetBottom - msgEl.getBoundingClientRect().top) + 'px';
+    // Pull the message up tight below the bouquet — run after a rAF so layout is settled
+    const bouquetBottom = bCY + H * 0.075;
+    requestAnimationFrame(() => {
+      if (msgEl) {
+        const msgTop = msgEl.getBoundingClientRect().top;
+        const gap    = msgTop - bouquetBottom;
+        if (gap > 8) {
+          const current = parseFloat(getComputedStyle(msgEl).marginTop) || 0;
+          msgEl.style.marginTop = (current - gap + 8) + 'px';
+        }
+      }
+    });
 
     // Colour palette
     const PINK     = '#e8849a';
