@@ -664,18 +664,31 @@ const FinalRevealScene = (() => {
   // ── Everything revealed → show replay button + start idle music ─
   function onMessageComplete() {
     const replayBtn = document.getElementById('replay-btn');
-    const row = document.getElementById('btn-row');
+    const msgEl = document.getElementById('birthday-message');
 
-    // Restyle replay-btn to circular
-    if (replayBtn) {
+    // Get or create the btn-row container inside #birthday-message
+    let row = document.getElementById('btn-row');
+    if (!row && msgEl) {
+      row = document.createElement('div');
+      row.id = 'btn-row';
+      row.style.cssText = `
+        display:flex; align-items:center; justify-content:center;
+        gap:18px; padding:20px 0 28px; pointer-events:none;
+        width:100%;
+      `;
+      msgEl.appendChild(row);
+    }
+
+    // Restyle replay-btn to circular and move into row
+    if (replayBtn && row) {
       replayBtn.style.cssText += `
         width:62px; height:62px; border-radius:50%;
         display:flex; align-items:center; justify-content:center;
         padding:0; font-size:1.4rem; line-height:1;
-        position:static; bottom:auto; left:auto; transform:none;
+        position:static; bottom:auto; left:auto; right:auto; transform:none;
         flex-shrink:0;
       `;
-      if (row && replayBtn.parentElement !== row) {
+      if (replayBtn.parentElement !== row) {
         row.insertBefore(replayBtn, row.firstChild);
       }
       replayBtn.style.pointerEvents = 'auto';
@@ -685,7 +698,7 @@ const FinalRevealScene = (() => {
       );
     }
 
-    // Build click-me button directly inside btn-row (no moving from body)
+    // Build click-me button and append to row (right of replay)
     if (row && !document.getElementById('click-me-btn')) {
       const clickBtn = document.createElement('button');
       clickBtn.id = 'click-me-btn';
@@ -703,12 +716,10 @@ const FinalRevealScene = (() => {
       `;
       row.appendChild(clickBtn);
 
-      // Wire up the bouquet popup click
       clickBtn.addEventListener('click', () => {
         if (typeof BouquetPopup !== 'undefined') BouquetPopup.open();
       });
 
-      // Heartbeat keyframes
       if (!document.getElementById('hb-style')) {
         const hbStyle = document.createElement('style');
         hbStyle.id = 'hb-style';
@@ -735,7 +746,6 @@ const FinalRevealScene = (() => {
       );
     }
 
-    if (row) row.style.pointerEvents = 'none';
     playIdleMusic();
   }
 
