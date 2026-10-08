@@ -675,7 +675,7 @@ const FinalRevealScene = (() => {
         flex-shrink:0;
       `;
 
-      // Move into btn-row if not already there
+      // Move replay into btn-row
       const row = document.getElementById('btn-row');
       if (row && replayBtn.parentElement !== row) {
         row.insertBefore(replayBtn, row.firstChild);
@@ -687,16 +687,24 @@ const FinalRevealScene = (() => {
         { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.2 }
       );
 
-      // Children handle their own pointer events
-      const row2 = document.getElementById('btn-row');
-      if (row2) row2.style.pointerEvents = 'none';
+      // Also move click-me btn into btn-row (right after replay)
+      const clickBtn = document.getElementById('click-me-btn');
+      if (clickBtn && row && clickBtn.parentElement !== row) {
+        row.appendChild(clickBtn);
+      }
+      if (clickBtn) {
+        gsap.fromTo(clickBtn,
+          { opacity: 0, scale: 0.72 },
+          { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.6,
+            onStart: () => { clickBtn.style.pointerEvents = 'auto'; }
+          }
+        );
+      }
+
+      // Row itself stays pointer-events:none so children handle clicks
+      if (row) row.style.pointerEvents = 'none';
     }
     playIdleMusic();
-
-    // Show the click-me bouquet button shortly after
-    if (typeof BouquetPopup !== 'undefined') {
-      gsap.delayedCall(1.8, () => BouquetPopup.showButton());
-    }
   }
 
   // ── Idle ambient music for the final reveal scene ─────────────
