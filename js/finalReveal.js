@@ -110,12 +110,12 @@ const FinalRevealScene = (() => {
     const frameBottom = frameEl.getBoundingClientRect().bottom + 10; // + outline
     const msgTop      = msgEl.getBoundingClientRect().top;
     const slotTop     = frameBottom;
-    const slotBottom  = Math.max(msgTop, slotTop + H * 0.12);
+    const slotBottom  = Math.max(msgTop, slotTop + H * 0.06);
     const slotH       = slotBottom - slotTop;
 
     // Un-scaled bouquet spans roughly 0.18*H vertically around bCY0
     const BOUQUET_H = H * 0.18;
-    const k = Math.max(0.40, Math.min(0.82, (slotH * 0.90) / BOUQUET_H));
+    const k = Math.max(0.30, Math.min(0.55, (slotH * 0.75) / BOUQUET_H));
     const bCY0 = H * 0.46;                         // layout origin used below
     const bCY  = slotTop + slotH / 2 + H * 0.01;   // where it is finally placed
 
@@ -130,39 +130,39 @@ const FinalRevealScene = (() => {
 
     // Greenery first (drawn underneath)
     const leaves = [
-      { x: bCX - W*0.18, y: bCY0 + H*0.03, angle: -0.55, len: H*0.09, w: H*0.022, color: '#7a9c5a', type: 'leaf', bloomT: 0 },
-      { x: bCX + W*0.12, y: bCY0 + H*0.04, angle:  0.45, len: H*0.08, w: H*0.020, color: '#8aac6a', type: 'leaf', bloomT: 0 },
-      { x: bCX - W*0.06, y: bCY0 + H*0.05, angle: -0.15, len: H*0.10, w: H*0.018, color: '#6a8c4a', type: 'leaf', bloomT: 0 },
-      { x: bCX + W*0.22, y: bCY0 - H*0.01, angle:  0.65, len: H*0.07, w: H*0.016, color: '#7a9c5a', type: 'leaf', bloomT: 0 },
-      { x: bCX - W*0.25, y: bCY0 - H*0.02, angle: -0.72, len: H*0.08, w: H*0.018, color: '#5a7a3a', type: 'leaf', bloomT: 0 },
-      { x: bCX + W*0.04, y: bCY0 + H*0.06, angle:  0.25, len: H*0.09, w: H*0.017, color: '#8aac6a', type: 'leaf', bloomT: 0 },
+      { x: bCX - W*0.14, y: bCY0 + H*0.02, angle: -0.55, len: H*0.06, w: H*0.015, color: '#7a9c5a', type: 'leaf', bloomT: 0 },
+      { x: bCX + W*0.10, y: bCY0 + H*0.03, angle:  0.45, len: H*0.055,w: H*0.014, color: '#8aac6a', type: 'leaf', bloomT: 0 },
+      { x: bCX - W*0.05, y: bCY0 + H*0.03, angle: -0.15, len: H*0.065,w: H*0.013, color: '#6a8c4a', type: 'leaf', bloomT: 0 },
+      { x: bCX + W*0.18, y: bCY0 - H*0.01, angle:  0.65, len: H*0.050,w: H*0.012, color: '#7a9c5a', type: 'leaf', bloomT: 0 },
+      { x: bCX - W*0.20, y: bCY0 - H*0.01, angle: -0.72, len: H*0.055,w: H*0.013, color: '#5a7a3a', type: 'leaf', bloomT: 0 },
+      { x: bCX + W*0.03, y: bCY0 + H*0.04, angle:  0.25, len: H*0.060,w: H*0.012, color: '#8aac6a', type: 'leaf', bloomT: 0 },
     ];
 
     // Main flowers — varied types, sizes, positions, rotations
     const blooms = [
       // Large centrepiece roses
-      { x: bCX,          y: bCY0 - H*0.01, size: W*0.115, rot: 0.08,  color: DEEP,    type: 'rose',        bloomT: 0 },
-      { x: bCX - W*0.12, y: bCY0 + H*0.00, size: W*0.100, rot: -0.22, color: PINK,    type: 'peony',       bloomT: 0 },
-      { x: bCX + W*0.13, y: bCY0 - H*0.02, size: W*0.095, rot:  0.18, color: BLUSH,   type: 'rose',        bloomT: 0 },
+      { x: bCX,          y: bCY0 - H*0.01, size: W*0.082, rot: 0.08,  color: DEEP,    type: 'rose',        bloomT: 0 },
+      { x: bCX - W*0.10, y: bCY0 + H*0.00, size: W*0.072, rot: -0.22, color: PINK,    type: 'peony',       bloomT: 0 },
+      { x: bCX + W*0.11, y: bCY0 - H*0.01, size: W*0.068, rot:  0.18, color: BLUSH,   type: 'rose',        bloomT: 0 },
 
       // Secondary ring
-      { x: bCX - W*0.24, y: bCY0 + H*0.01, size: W*0.082, rot: -0.35, color: PINK,    type: 'ranunculus',  bloomT: 0 },
-      { x: bCX + W*0.24, y: bCY0 - H*0.01, size: W*0.078, rot:  0.30, color: BLUSH,   type: 'peony',       bloomT: 0 },
-      { x: bCX - W*0.05, y: bCY0 - H*0.08, size: W*0.075, rot: -0.12, color: CREAM,   type: 'rose',        bloomT: 0 },
-      { x: bCX + W*0.07, y: bCY0 + H*0.05, size: W*0.072, rot:  0.42, color: DEEP,    type: 'ranunculus',  bloomT: 0 },
+      { x: bCX - W*0.20, y: bCY0 + H*0.01, size: W*0.058, rot: -0.35, color: PINK,    type: 'ranunculus',  bloomT: 0 },
+      { x: bCX + W*0.20, y: bCY0 - H*0.01, size: W*0.055, rot:  0.30, color: BLUSH,   type: 'peony',       bloomT: 0 },
+      { x: bCX - W*0.04, y: bCY0 - H*0.06, size: W*0.052, rot: -0.12, color: CREAM,   type: 'rose',        bloomT: 0 },
+      { x: bCX + W*0.06, y: bCY0 + H*0.04, size: W*0.050, rot:  0.42, color: DEEP,    type: 'ranunculus',  bloomT: 0 },
 
       // Accent flowers
-      { x: bCX - W*0.18, y: bCY0 - H*0.06, size: W*0.060, rot:  0.55, color: WHITE,   type: 'blossom',     bloomT: 0 },
-      { x: bCX + W*0.19, y: bCY0 + H*0.04, size: W*0.058, rot: -0.48, color: LAVENDER,type: 'blossom',     bloomT: 0 },
-      { x: bCX - W*0.30, y: bCY0 - H*0.04, size: W*0.055, rot:  0.65, color: PEACH,   type: 'tulip',       bloomT: 0 },
-      { x: bCX + W*0.30, y: bCY0 + H*0.00, size: W*0.058, rot: -0.28, color: CREAM,   type: 'tulip',       bloomT: 0 },
-      { x: bCX + W*0.01, y: bCY0 + H*0.07, size: W*0.050, rot:  0.15, color: WHITE,   type: 'blossom',     bloomT: 0 },
+      { x: bCX - W*0.15, y: bCY0 - H*0.04, size: W*0.042, rot:  0.55, color: WHITE,   type: 'blossom',     bloomT: 0 },
+      { x: bCX + W*0.16, y: bCY0 + H*0.03, size: W*0.040, rot: -0.48, color: LAVENDER,type: 'blossom',     bloomT: 0 },
+      { x: bCX - W*0.26, y: bCY0 - H*0.02, size: W*0.038, rot:  0.65, color: PEACH,   type: 'tulip',       bloomT: 0 },
+      { x: bCX + W*0.26, y: bCY0 + H*0.00, size: W*0.040, rot: -0.28, color: CREAM,   type: 'tulip',       bloomT: 0 },
+      { x: bCX + W*0.01, y: bCY0 + H*0.05, size: W*0.034, rot:  0.15, color: WHITE,   type: 'blossom',     bloomT: 0 },
 
       // Small filler blossoms
-      { x: bCX - W*0.09, y: bCY0 + H*0.06, size: W*0.040, rot: -0.70, color: PINK,    type: 'blossom',     bloomT: 0 },
-      { x: bCX + W*0.09, y: bCY0 - H*0.09, size: W*0.038, rot:  0.80, color: BLUSH,   type: 'blossom',     bloomT: 0 },
-      { x: bCX - W*0.33, y: bCY0 + H*0.03, size: W*0.036, rot: -0.20, color: WHITE,   type: 'blossom',     bloomT: 0 },
-      { x: bCX + W*0.33, y: bCY0 - H*0.05, size: W*0.038, rot:  0.55, color: CREAM,   type: 'blossom',     bloomT: 0 },
+      { x: bCX - W*0.08, y: bCY0 + H*0.04, size: W*0.028, rot: -0.70, color: PINK,    type: 'blossom',     bloomT: 0 },
+      { x: bCX + W*0.08, y: bCY0 - H*0.06, size: W*0.026, rot:  0.80, color: BLUSH,   type: 'blossom',     bloomT: 0 },
+      { x: bCX - W*0.28, y: bCY0 + H*0.02, size: W*0.024, rot: -0.20, color: WHITE,   type: 'blossom',     bloomT: 0 },
+      { x: bCX + W*0.28, y: bCY0 - H*0.03, size: W*0.026, rot:  0.55, color: CREAM,   type: 'blossom',     bloomT: 0 },
     ];
 
     flowers = [...leaves, ...blooms];
