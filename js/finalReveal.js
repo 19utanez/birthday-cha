@@ -120,8 +120,8 @@ const FinalRevealScene = (() => {
         if (msgEl) {
           const msgTop = msgEl.getBoundingClientRect().top;
           const gap = msgTop - bouquetBottom;
-          if (gap > 12) {
-            msgEl.style.transform = `translateY(-${gap - 12}px)`;
+          if (gap > 2) {
+            msgEl.style.transform = `translateY(-${gap - 2}px)`;
           }
         }
       });
@@ -950,7 +950,7 @@ const BouquetPopup = (() => {
         row = document.createElement('div');
         row.id = 'btn-row';
         row.style.cssText = `
-          position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+          position:fixed; bottom:52px; left:50%; transform:translateX(-50%);
           z-index:60; display:flex; align-items:center; gap:18px;
           pointer-events:none;
         `;
