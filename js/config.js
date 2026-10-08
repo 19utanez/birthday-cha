@@ -48,10 +48,10 @@ const CONFIG = {
   // showAt  : seconds after audio starts when line appears
   // holdFor : seconds the line stays active before lyrics end signal
   lyricTimings: [
-    { showAt: 0.5,  holdFor: 2.9 },   // "Happy birthday to you,"
-    { showAt: 3.8,  holdFor: 2.9 },   // "Happy birthday to you,"
-    { showAt: 7.2,  holdFor: 3.2 },   // "Happy birthday, happy birthday,"
-    { showAt: 10.8, holdFor: 3.2 },   // "Happy birthday to you."
+    { showAt: 0.5,  holdFor: 3.8 },   // "Happy birthday to you,"
+    { showAt: 4.8,  holdFor: 3.8 },   // "Happy birthday to you,"
+    { showAt: 9.0,  holdFor: 4.2 },   // "Happy birthday, happy birthday,"
+    { showAt: 13.6, holdFor: 4.2 },   // "Happy birthday to you."
   ],
 
   // ── Flower animation settings (used in Phase 2) ────────────────
