@@ -43,6 +43,7 @@ const CakeScene = (() => {
   function draw(ctx, W, H, flicker, candleX, candleY) {
     const t = reveal.value;
     if (t <= 0) return;
+    if (t > 0.01) triggerRevealSounds();
 
     const candleH = clamp(H * 0.07, 32, 52);
     const geom    = getGeom(W, H, candleY, candleH);
@@ -406,6 +407,158 @@ const CakeScene = (() => {
   }
 
   function clamp(v,lo,hi) { return Math.max(lo,Math.min(hi,v)); }
+
+  // ── Audio: fire once when reveal starts ───────────────────────
+  let soundsPlayed = false;
+
+  function triggerRevealSounds() {
+    if (soundsPlayed) return;
+    soundsPlayed = true;
+    playCampfire();
+    // Birthday bg music starts slightly after campfire settles
+    setTimeout(playBirthdayBg, 900);
+  }
+
+  // Reset so sounds replay if experience restarts
+  reveal.__reset = () => { soundsPlayed = false; };
+
+  // ── Campfire crackling ────────────────────────────────────────
+  // Looping low-frequency noise with random pops — like candle/fire ambience
+  function playCampfire() {
+    try {
+      const Ctx = window._audioContext ||
+        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+      if (!Ctx) return;
+      if (Ctx.state === 'suspended') Ctx.resume();
+
+      const master = Ctx.createGain();
+      master.gain.value = 0;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // Fade campfire in as cake reveals, hold ~12s then fade out
+      master.gain.linearRampToValueAtTime(0.22, now + 2.0);
+      master.gain.setValueAtTime(0.22, now + 10.0);
+      master.gain.linearRampToValueAtTime(0, now + 14.0);
+
+      // ── Base crackle — low bandpass noise loop ────────────────
+      function crackleLoop(startAt) {
+        const dur = 1.2 + Math.random() * 0.6;
+        const buf = Ctx.createBuffer(1, Math.ceil(Ctx.sampleRate * dur), Ctx.sampleRate);
+        const d   = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const src = Ctx.createBufferSource();
+        const bp  = Ctx.createBiquadFilter();
+        const env = Ctx.createGain();
+        src.buffer = buf;
+        bp.type = 'bandpass'; bp.frequency.value = 380; bp.Q.value = 0.5;
+        env.gain.setValueAtTime(0.55 + Math.random() * 0.20, startAt);
+        src.connect(bp); bp.connect(env); env.connect(master);
+        src.start(startAt); src.stop(startAt + dur + 0.05);
+        if (startAt - now < 14) {
+          setTimeout(() => crackleLoop(Ctx.currentTime + 0.05), (dur - 0.1) * 1000);
+        }
+      }
+      crackleLoop(now + 0.05);
+
+      // ── Random pops — quick pitched thuds ─────────────────────
+      function schedulePop() {
+        const delay = 0.4 + Math.random() * 1.2;
+        setTimeout(() => {
+          if (Ctx.currentTime - now > 13) return;
+          const t   = Ctx.currentTime;
+          const osc = Ctx.createOscillator();
+          const env = Ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(80 + Math.random() * 60, t);
+          osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+          env.gain.setValueAtTime(0.35 + Math.random() * 0.20, t);
+          env.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(env); env.connect(master);
+          osc.start(t); osc.stop(t + 0.14);
+          schedulePop();
+        }, delay * 1000);
+      }
+      schedulePop();
+
+      // ── Warm hiss layer — very soft high noise ────────────────
+      const hissBuf = Ctx.createBuffer(1, Ctx.sampleRate * 14, Ctx.sampleRate);
+      const hissD   = hissBuf.getChannelData(0);
+      for (let i = 0; i < hissD.length; i++) hissD[i] = Math.random() * 2 - 1;
+      const hSrc = Ctx.createBufferSource();
+      const hLp  = Ctx.createBiquadFilter();
+      const hEnv = Ctx.createGain();
+      hSrc.buffer = hissBuf;
+      hLp.type = 'lowpass'; hLp.frequency.value = 220;
+      hEnv.gain.value = 0.18;
+      hSrc.connect(hLp); hLp.connect(hEnv); hEnv.connect(master);
+      hSrc.start(now); hSrc.stop(now + 14.1);
+
+    } catch(e) { console.warn('Campfire sound unavailable:', e.message); }
+  }
+
+  // ── Warm birthday background music ───────────────────────────
+  // Gentle music-box style melody over a soft waltz chord pad.
+  // Plays while the cake is revealed, fades out as cat starts walking.
+  function playBirthdayBg() {
+    try {
+      const Ctx = window._audioContext ||
+        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+      if (!Ctx) return;
+      if (Ctx.state === 'suspended') Ctx.resume();
+
+      const master = Ctx.createGain();
+      master.gain.value = 0;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // Fade in softly, hold, then fade before cat walk
+      master.gain.linearRampToValueAtTime(0.16, now + 1.5);
+      master.gain.setValueAtTime(0.16, now + 9.0);
+      master.gain.linearRampToValueAtTime(0, now + 12.5);
+
+      // ── Chord pad — C maj waltz: root + 5th, slow swell ──────
+      const PADS = [130.81, 196.00, 261.63, 329.63];
+      PADS.forEach(freq => {
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.22, now + 2.0);
+        env.gain.setValueAtTime(0.22, now + 9.0);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 12.5);
+        osc.connect(env); env.connect(master);
+        osc.start(now); osc.stop(now + 12.6);
+      });
+
+      // ── Music-box melody — Happy Birthday tune, gentle & slow ─
+      // Same notes as chiptune but sine wave, softer, slower (BEAT=0.72s)
+      const BEAT = 0.72;
+      const MELODY = [
+        [392.00,0.75],[392.00,0.25],[440.00,1.0],[392.00,1.0],[523.25,1.0],[493.88,2.0],
+        [392.00,0.75],[392.00,0.25],[440.00,1.0],[392.00,1.0],[587.33,1.0],[523.25,2.0],
+      ];
+      let t = now + 1.8;
+      MELODY.forEach(([freq, beats]) => {
+        const dur = beats * BEAT;
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, t);
+        env.gain.linearRampToValueAtTime(0.28, t + 0.04);
+        env.gain.setValueAtTime(0.24, t + dur * 0.7);
+        env.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.92);
+        osc.connect(env); env.connect(master);
+        osc.start(t); osc.stop(t + dur);
+        t += dur;
+      });
+
+    } catch(e) { console.warn('Birthday bg unavailable:', e.message); }
+  }
 
   return { init, draw, reveal };
 
