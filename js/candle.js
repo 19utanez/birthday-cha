@@ -97,6 +97,109 @@ const CandleScene = (() => {
     startTime   = performance.now();
     running     = true;
     rafId       = requestAnimationFrame(tick);
+    playLighterSound();
+  }
+
+  // ── Lighter sound: click → hiss → soft flame whoosh ──────────
+  function playLighterSound() {
+    try {
+      const Ctx = window._audioContext ||
+        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+      if (!Ctx) return;
+      if (Ctx.state === 'suspended') Ctx.resume();
+
+      const master = Ctx.createGain();
+      master.gain.value = 0.55;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // ── 1. Flint click — very short noise burst ───────────────
+      const clickBuf = Ctx.createBuffer(1, Ctx.sampleRate * 0.04, Ctx.sampleRate);
+      const clickData = clickBuf.getChannelData(0);
+      for (let i = 0; i < clickData.length; i++) {
+        clickData[i] = (Math.random() * 2 - 1) *
+          Math.exp(-i / (Ctx.sampleRate * 0.006));  // fast exponential decay
+      }
+      const clickSrc = Ctx.createBufferSource();
+      const clickEnv = Ctx.createGain();
+      clickSrc.buffer = clickBuf;
+      clickEnv.gain.setValueAtTime(0.9, now);
+      clickEnv.gain.linearRampToValueAtTime(0, now + 0.04);
+      const clickHp = Ctx.createBiquadFilter();
+      clickHp.type = 'highpass';
+      clickHp.frequency.value = 2200;
+      clickSrc.connect(clickHp);
+      clickHp.connect(clickEnv);
+      clickEnv.connect(master);
+      clickSrc.start(now);
+      clickSrc.stop(now + 0.05);
+
+      // ── 2. Gas hiss — filtered white noise ───────────────────
+      const hissDur = 0.28;
+      const hissBuf = Ctx.createBuffer(1, Ctx.sampleRate * hissDur, Ctx.sampleRate);
+      const hissData = hissBuf.getChannelData(0);
+      for (let i = 0; i < hissData.length; i++) hissData[i] = Math.random() * 2 - 1;
+      const hissSrc = Ctx.createBufferSource();
+      const hissEnv = Ctx.createGain();
+      const hissBp  = Ctx.createBiquadFilter();
+      hissSrc.buffer = hissBuf;
+      hissBp.type = 'bandpass';
+      hissBp.frequency.value = 3800;
+      hissBp.Q.value = 0.6;
+      hissEnv.gain.setValueAtTime(0, now + 0.03);
+      hissEnv.gain.linearRampToValueAtTime(0.55, now + 0.08);
+      hissEnv.gain.linearRampToValueAtTime(0.28, now + 0.18);
+      hissEnv.gain.linearRampToValueAtTime(0, now + hissDur + 0.03);
+      hissSrc.connect(hissBp);
+      hissBp.connect(hissEnv);
+      hissEnv.connect(master);
+      hissSrc.start(now + 0.03);
+      hissSrc.stop(now + hissDur + 0.05);
+
+      // ── 3. Flame whoosh — low warm tone that blooms open ─────
+      const whoosh = Ctx.createOscillator();
+      const whooshEnv = Ctx.createGain();
+      const whooshLp  = Ctx.createBiquadFilter();
+      whoosh.type = 'sawtooth';
+      whoosh.frequency.setValueAtTime(120, now + 0.12);
+      whoosh.frequency.exponentialRampToValueAtTime(55, now + 0.55);
+      whooshLp.type = 'lowpass';
+      whooshLp.frequency.setValueAtTime(800, now + 0.12);
+      whooshLp.frequency.exponentialRampToValueAtTime(180, now + 0.55);
+      whooshEnv.gain.setValueAtTime(0, now + 0.12);
+      whooshEnv.gain.linearRampToValueAtTime(0.38, now + 0.22);
+      whooshEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+      whoosh.connect(whooshLp);
+      whooshLp.connect(whooshEnv);
+      whooshEnv.connect(master);
+      whoosh.start(now + 0.12);
+      whoosh.stop(now + 0.8);
+
+      // ── 4. Soft warm flame sustain — crackling warmth ─────────
+      const flameDur = 1.8;
+      const flameBuf = Ctx.createBuffer(1, Ctx.sampleRate * flameDur, Ctx.sampleRate);
+      const flameData = flameBuf.getChannelData(0);
+      for (let i = 0; i < flameData.length; i++) flameData[i] = Math.random() * 2 - 1;
+      const flameSrc = Ctx.createBufferSource();
+      const flameEnv = Ctx.createGain();
+      const flameLp  = Ctx.createBiquadFilter();
+      flameSrc.buffer = flameBuf;
+      flameLp.type = 'lowpass';
+      flameLp.frequency.value = 320;
+      flameEnv.gain.setValueAtTime(0, now + 0.18);
+      flameEnv.gain.linearRampToValueAtTime(0.18, now + 0.38);
+      flameEnv.gain.setValueAtTime(0.12, now + 0.9);
+      flameEnv.gain.exponentialRampToValueAtTime(0.001, now + flameDur);
+      flameSrc.connect(flameLp);
+      flameLp.connect(flameEnv);
+      flameEnv.connect(master);
+      flameSrc.start(now + 0.18);
+      flameSrc.stop(now + flameDur + 0.05);
+
+    } catch(e) {
+      console.warn('Lighter sound unavailable:', e.message);
+    }
   }
 
   function stopFlame() {
