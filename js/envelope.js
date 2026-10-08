@@ -120,11 +120,83 @@ const EnvelopeScene = (() => {
     // Unlock audio context on first user gesture
     unlockAudio();
 
+    // Play envelope open sound immediately inside this gesture (iOS requires it)
+    playEnvelopeSound();
+
     // Kill the float so it doesn't fight GSAP
     gsap.killTweensOf(envelopeWrap);
 
     // Run the cinematic open sequence
     openEnvelope();
+  }
+
+  // ── Envelope open sound ────────────────────────────────────────
+  // Paper rustle + soft wax-seal pop + warm rising shimmer
+  function playEnvelopeSound() {
+    try {
+      const Ctx = audioCtx; // use the context just created by unlockAudio()
+      if (!Ctx) return;
+
+      const master = Ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // 1. Paper rustle — filtered white noise burst
+      const bufLen = Ctx.sampleRate * 0.35;
+      const noiseBuf = Ctx.createBuffer(1, bufLen, Ctx.sampleRate);
+      const data = noiseBuf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+      const noise = Ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+      const noiseFilter = Ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.value = 2200;
+      noiseFilter.Q.value = 0.8;
+      const noiseGain = Ctx.createGain();
+      noiseGain.gain.setValueAtTime(0, now);
+      noiseGain.gain.linearRampToValueAtTime(0.55, now + 0.04);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(master);
+      noise.start(now);
+      noise.stop(now + 0.36);
+
+      // 2. Wax seal pop — short low thud
+      const popOsc = Ctx.createOscillator();
+      const popGain = Ctx.createGain();
+      popOsc.type = 'sine';
+      popOsc.frequency.setValueAtTime(180, now);
+      popOsc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+      popGain.gain.setValueAtTime(0.7, now);
+      popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      popOsc.connect(popGain);
+      popGain.connect(master);
+      popOsc.start(now);
+      popOsc.stop(now + 0.15);
+
+      // 3. Rising shimmer — magical sparkle as letter lifts out
+      const SHIMMER = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      SHIMMER.forEach((freq, i) => {
+        const d = 0.18 + i * 0.09;
+        const osc = Ctx.createOscillator();
+        const env = Ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now + d);
+        env.gain.linearRampToValueAtTime(0.22, now + d + 0.03);
+        env.gain.exponentialRampToValueAtTime(0.001, now + d + 0.7);
+        osc.connect(env);
+        env.connect(master);
+        osc.start(now + d);
+        osc.stop(now + d + 0.75);
+      });
+
+    } catch(e) {
+      console.warn('Envelope sound failed:', e.message);
+    }
   }
 
   // ── Cinematic open sequence ────────────────────────────────────
