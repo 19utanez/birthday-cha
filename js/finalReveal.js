@@ -664,8 +664,9 @@ const FinalRevealScene = (() => {
   // ── Everything revealed → show replay button + start idle music ─
   function onMessageComplete() {
     const replayBtn = document.getElementById('replay-btn');
+    const row = document.getElementById('btn-row');
 
-    // Restyle replay-btn to circular to match the click-me btn
+    // Restyle replay-btn to circular
     if (replayBtn) {
       replayBtn.style.cssText += `
         width:62px; height:62px; border-radius:50%;
@@ -674,59 +675,67 @@ const FinalRevealScene = (() => {
         position:static; bottom:auto; left:auto; transform:none;
         flex-shrink:0;
       `;
-
-      // Move replay into btn-row (first = left)
-      const row = document.getElementById('btn-row');
       if (row && replayBtn.parentElement !== row) {
         row.insertBefore(replayBtn, row.firstChild);
       }
-
       replayBtn.style.pointerEvents = 'auto';
       gsap.fromTo(replayBtn,
         { opacity: 0, scale: 0.72 },
         { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.2 }
       );
-
-      // Move click-me btn into btn-row (after replay = right side)
-      const clickBtn = document.getElementById('click-me-btn');
-      if (clickBtn && row) {
-        row.appendChild(clickBtn);
-        // Reset the offscreen parking — become in-flow inside btn-row
-        clickBtn.style.position = 'static';
-        clickBtn.style.top = 'auto';
-        clickBtn.style.left = 'auto';
-        clickBtn.style.display = 'flex';
-      }
-      if (clickBtn) {
-        // Inject heartbeat keyframes once
-        if (!document.getElementById('hb-style')) {
-          const hbStyle = document.createElement('style');
-          hbStyle.id = 'hb-style';
-          hbStyle.textContent = `
-            @keyframes clickme-beat {
-              0%   { transform: scale(1); }
-              14%  { transform: scale(1.22); }
-              28%  { transform: scale(1); }
-              42%  { transform: scale(1.16); }
-              70%  { transform: scale(1); }
-              100% { transform: scale(1); }
-            }
-            #click-me-btn { animation: clickme-beat 2.2s ease-in-out infinite; }
-            #click-me-btn:hover { animation: none; transform: scale(1.08) !important; }
-          `;
-          document.head.appendChild(hbStyle);
-        }
-        gsap.fromTo(clickBtn,
-          { opacity: 0, scale: 0.72 },
-          { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.6,
-            onStart: () => { clickBtn.style.pointerEvents = 'auto'; }
-          }
-        );
-      }
-
-      // Row itself stays pointer-events:none so children handle clicks
-      if (row) row.style.pointerEvents = 'none';
     }
+
+    // Build click-me button directly inside btn-row (no moving from body)
+    if (row && !document.getElementById('click-me-btn')) {
+      const clickBtn = document.createElement('button');
+      clickBtn.id = 'click-me-btn';
+      clickBtn.innerHTML = '💕<br><span style="font-size:0.6rem;letter-spacing:.04em;display:block;margin-top:2px;">Click me!</span>';
+      clickBtn.style.cssText = `
+        width:62px; height:62px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center; flex-direction:column;
+        padding:0; font-size:1.4rem; line-height:1;
+        font-family:inherit; font-weight:700; color:#c8506a;
+        background:linear-gradient(135deg,#fff0f3 0%,#ffe4ec 50%,#fff0f3 100%);
+        border:2px solid #d4af6a;
+        box-shadow:0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset;
+        cursor:pointer; opacity:0; pointer-events:none; flex-shrink:0;
+        transition:box-shadow .18s ease;
+      `;
+      row.appendChild(clickBtn);
+
+      // Wire up the bouquet popup click
+      clickBtn.addEventListener('click', () => {
+        if (typeof BouquetPopup !== 'undefined') BouquetPopup.open();
+      });
+
+      // Heartbeat keyframes
+      if (!document.getElementById('hb-style')) {
+        const hbStyle = document.createElement('style');
+        hbStyle.id = 'hb-style';
+        hbStyle.textContent = `
+          @keyframes clickme-beat {
+            0%   { transform: scale(1); }
+            14%  { transform: scale(1.22); }
+            28%  { transform: scale(1); }
+            42%  { transform: scale(1.16); }
+            70%  { transform: scale(1); }
+            100% { transform: scale(1); }
+          }
+          #click-me-btn { animation: clickme-beat 2.2s ease-in-out infinite; }
+          #click-me-btn:hover { animation: none; transform: scale(1.08) !important; }
+        `;
+        document.head.appendChild(hbStyle);
+      }
+
+      gsap.fromTo(clickBtn,
+        { opacity: 0, scale: 0.72 },
+        { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.6,
+          onStart: () => { clickBtn.style.pointerEvents = 'auto'; }
+        }
+      );
+    }
+
+    if (row) row.style.pointerEvents = 'none';
     playIdleMusic();
   }
 
@@ -1000,43 +1009,9 @@ const BouquetPopup = (() => {
 
   function init() {
     injectDOM();
-    const btn = document.getElementById('click-me-btn');
-    if (btn) btn.addEventListener('click', open);
   }
 
   function injectDOM() {
-    if (!document.getElementById('click-me-btn')) {
-      const btn = document.createElement('button');
-      btn.id = 'click-me-btn';
-      btn.innerHTML = '💕<br><span style="font-size:0.6rem;letter-spacing:.04em;display:block;margin-top:2px;">Click me!</span>';
-      btn.style.cssText = `
-        width:62px; height:62px; border-radius:50%;
-        display:flex; align-items:center; justify-content:center; flex-direction:column;
-        padding:0; font-size:1.4rem; line-height:1;
-        font-family:inherit; font-weight:700;
-        color:#c8506a;
-        background:linear-gradient(135deg,#fff0f3 0%,#ffe4ec 50%,#fff0f3 100%);
-        border:2px solid #d4af6a;
-        box-shadow:0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset;
-        cursor:pointer;
-        opacity:0;
-        pointer-events:none;
-        position:fixed; top:-9999px; left:-9999px;
-        transition:transform .18s ease, box-shadow .18s ease;
-        flex-shrink:0;
-      `;
-      btn.onmouseenter = () => {
-        btn.style.transform = 'scale(1.06)';
-        btn.style.boxShadow = '0 4px 28px rgba(200,80,106,0.30), 0 0 0 1px rgba(212,175,106,0.35) inset';
-      };
-      btn.onmouseleave = () => {
-        btn.style.transform = 'scale(1)';
-        btn.style.boxShadow = '0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset';
-      };
-      // Hidden until moved into btn-row by onMessageComplete
-      document.body.appendChild(btn);
-    }
-
     if (!document.getElementById('bouquet-overlay')) {
       const ov = document.createElement('div');
       ov.id = 'bouquet-overlay';
