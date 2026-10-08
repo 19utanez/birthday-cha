@@ -1187,10 +1187,20 @@ const BouquetPopup = (() => {
   function drawBouquet(t) {
     const cx = W * 0.50;
     const cy = H * 0.40;
-    drawWrap(cx, cy, t);
-    drawGreenery(cx, cy, t);
-    drawFlowers(cx, cy, t);
-    drawBow(cx, cy + H * 0.055, W * 0.078, easeOut(Math.min(t / 0.3, 1)));
+
+    const wrapPop = easeOut(clamp((t - 0) / 0.25, 0, 1));
+    if (wrapPop > 0) drawWrap(cx, cy, wrapPop);
+
+    const greenPop = easeOut(clamp((t - 0.05) / 0.30, 0, 1));
+    if (greenPop > 0) drawGreenery(cx, cy, greenPop);
+
+    if (t > 0.10) drawFlowers(cx, cy, t);
+
+    const bbPop = easeOut(clamp((t - 0.35) / 0.25, 0, 1));
+    if (bbPop > 0) drawBabysBreath(cx, cy, bbPop);
+
+    const bowPop = easeOut(clamp(t / 0.30, 0, 1));
+    if (bowPop > 0) drawBow(cx, cy + H * 0.16, 1, bowPop);
   }
 
   // ── Wrapping paper: layered Korean cone with texture + shadow ────
