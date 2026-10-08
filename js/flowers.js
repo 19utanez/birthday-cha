@@ -334,17 +334,9 @@ const FlowerScene = (() => {
       bigs.push(d);
     }
 
-    // Remove small flowers that would sit underneath a big bloom
-    if (bigs.length) {
-      list = list.filter(d => {
-        const x = cx + Math.cos(d.ang) * d.r;
-        const y = cy + Math.sin(d.ang) * d.r;
-        return bigs.every(o => Math.hypot(o.px - x, o.py - y) > o.size * 0.85);
-      });
-    }
-
-    // Performance cap — thin out randomly, keep the hero + big blooms
-    while (list.length > maxFlowers - 1 - bigs.length) {
+    // Small flowers are NOT removed or reduced for the big blooms — the big
+    // ones are simply added on top, so the original flower count/design stays.
+    while (list.length > maxFlowers - 1) {
       list.splice(Math.floor(Math.random() * list.length), 1);
     }
 
