@@ -113,17 +113,18 @@ const FinalRevealScene = (() => {
     const bCY0 = H * 0.46;  // layout origin
     const bCY  = frameBottom + H * 0.075;  // sit close under the frame
 
-    // Pull the message up tight below the bouquet — run after a rAF so layout is settled
+    // Force the message up to sit tight below the bouquet using transform
     const bouquetBottom = bCY + H * 0.075;
     requestAnimationFrame(() => {
-      if (msgEl) {
-        const msgTop = msgEl.getBoundingClientRect().top;
-        const gap    = msgTop - bouquetBottom;
-        if (gap > 8) {
-          const current = parseFloat(getComputedStyle(msgEl).marginTop) || 0;
-          msgEl.style.marginTop = (current - gap + 8) + 'px';
+      requestAnimationFrame(() => {
+        if (msgEl) {
+          const msgTop = msgEl.getBoundingClientRect().top;
+          const gap = msgTop - bouquetBottom;
+          if (gap > 12) {
+            msgEl.style.transform = `translateY(-${gap - 12}px)`;
+          }
         }
-      }
+      });
     });
 
     // Colour palette
