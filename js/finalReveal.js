@@ -759,7 +759,16 @@ const FinalRevealScene = (() => {
       const Ctx = window._audioContext ||
         (window.AudioContext ? new AudioContext() : new webkitAudioContext());
       if (!Ctx) return;
-      if (Ctx.state === 'suspended') Ctx.resume();
+      if (Ctx.state === 'suspended') {
+        Ctx.resume().then(() => _scheduleIdleMusic(Ctx)).catch(() => {});
+        return;
+      }
+      _scheduleIdleMusic(Ctx);
+    } catch(e) { console.warn('playIdleMusic failed:', e); }
+  }
+
+  function _scheduleIdleMusic(Ctx) {
+    try {
 
       // Master gain — very soft, won't compete with anything
       const master = Ctx.createGain();
@@ -852,11 +861,18 @@ const FinalRevealScene = (() => {
   // Cinematic build: soft shimmer → rising strings → bright bell chord
   // Timed to feel like flowers bursting open (lasts ~5s)
   function playBouquetFanfare() {
+    const Ctx = window._audioContext ||
+      (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+    if (!Ctx) return;
+    if (Ctx.state === 'suspended') {
+      Ctx.resume().then(() => _scheduleBouquetFanfare(Ctx)).catch(() => {});
+      return;
+    }
+    _scheduleBouquetFanfare(Ctx);
+  }
+
+  function _scheduleBouquetFanfare(Ctx) {
     try {
-      const Ctx = window._audioContext ||
-        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
-      if (!Ctx) return;
-      if (Ctx.state === 'suspended') Ctx.resume();
 
       const master = Ctx.createGain();
       master.gain.value = 0.30;
@@ -1741,12 +1757,18 @@ const BouquetPopup = (() => {
 
   // ── Open chime sound ─────────────────────────────────────────────
   function playOpenChime() {
-    try {
-      const Ctx = window._audioContext ||
-        (window.AudioContext ? new AudioContext() : new webkitAudioContext());
-      if (!Ctx) return;
-      if (Ctx.state === 'suspended') Ctx.resume();
+    const Ctx = window._audioContext ||
+      (window.AudioContext ? new AudioContext() : new webkitAudioContext());
+    if (!Ctx) return;
+    if (Ctx.state === 'suspended') {
+      Ctx.resume().then(() => _scheduleOpenChime(Ctx)).catch(() => {});
+      return;
+    }
+    _scheduleOpenChime(Ctx);
+  }
 
+  function _scheduleOpenChime(Ctx) {
+    try {
       const master = Ctx.createGain();
       master.gain.value = 0.22;
       master.connect(Ctx.destination);
