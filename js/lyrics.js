@@ -23,8 +23,8 @@ const LyricsScene = (() => {
   let chipScheduled = false;
 
   // Happy Birthday melody — [note in Hz, duration in beats]
-  // Each beat ≈ 0.46s (~65 BPM — a bit quicker, matches tighter lyric timing)
-  const BEAT = 0.46;
+  // Each beat ≈ 0.58s (~52 BPM — slower, more emotional feel)
+  const BEAT = 0.58;
   const MELODY = [
     // "Hap-py birth-day to you"
     [392.00, 0.75], [392.00, 0.25], [440.00, 1.0 ], [392.00, 1.0 ],
