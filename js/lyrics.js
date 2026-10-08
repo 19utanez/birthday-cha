@@ -60,7 +60,9 @@ const LyricsScene = (() => {
     if (!chipCtx || chipScheduled) return;
     chipScheduled = true;
 
-    const now = chipCtx.currentTime + (startDelaySec || 0.05);
+    // startDelaySec must match showAt of line 0 in CONFIG.lyricTimings (0.50s)
+    // so the first chiptune note fires exactly when the first lyric appears
+    const now = chipCtx.currentTime + (startDelaySec || 0.50);
     let t = now;
 
     for (const [freq, beats] of MELODY) {
@@ -114,9 +116,9 @@ const LyricsScene = (() => {
     // 8-bit chiptune melody plays in sync with lyrics
     if (chipCtx) {
       if (chipCtx.state === 'suspended') {
-        chipCtx.resume().then(() => playChiptune(0.05));
+        chipCtx.resume().then(() => playChiptune(0.50));
       } else {
-        playChiptune(0.05);
+        playChiptune(0.50);
       }
     }
 
