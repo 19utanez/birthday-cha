@@ -42,6 +42,7 @@ const FlowerScene = (() => {
   let maxFlowers    = 150;
   let maxParticles  = 900;
   let sparkleCount  = 8;
+  let spritesThisFrame = 0;
 
   const SPAWN_WINDOW = 3800;                 // ms — wave travels center → corners
   const HOLD         = 2400;                 // ms at peak before handing off
@@ -52,6 +53,15 @@ const FlowerScene = (() => {
   const MOBILE_MAX_FLOWERS  = 55;            // ← lower this for even lighter mobile
   const DESKTOP_MAX_DPR     = 2;             // original
   const MOBILE_MAX_DPR      = 1.5;
+
+  // Smoothness boosters — look identical, cost far less per frame:
+  // once a flower is fully open it is drawn from a pre-rendered bitmap
+  // (1 drawImage) instead of re-drawing 20-40 gradient petals every frame.
+  const SPRITES_ON_MOBILE   = true;
+  const SPRITES_ON_DESKTOP  = false;  // desktop GPUs don't need it (saves RAM)
+  const SPRITE_OVERSAMPLE   = 1.35;   // sprite sharpness (1 = screen resolution)
+  const SPRITE_MAX_PX       = 1024;   // safety cap per sprite
+  const SPRITES_PER_FRAME   = 2;      // spread baking across frames (no hitches)
 
   // ── Palette — romantic blush / rose / petal tones ──────────────
   const PALETTES = {
@@ -384,6 +394,7 @@ const FlowerScene = (() => {
     const elapsed = now - startTime;
     const dt      = Math.min((now - lastNow) / 1000, 0.05);
     lastNow = now;
+    spritesThisFrame = 0;
 
     while (spawnSchedule.length && spawnSchedule[0].t <= elapsed) {
       flowers.push(createFlower(spawnSchedule.shift(), elapsed));
@@ -416,6 +427,7 @@ const FlowerScene = (() => {
       openEndMs: def.stemDur * 0.55 + def.petalDelay * (def.petalCount - 1) + def.petalDur,
       burst: false,
       big: !!def.big,
+      sprite: null, spriteR: 0,
       _age: 0, _scale: 1, _alpha: 1,
     };
   }
@@ -469,6 +481,58 @@ const FlowerScene = (() => {
     ctx.restore();
   }
 
+  function spritesEnabled() {
+    return isMobile ? SPRITES_ON_MOBILE : SPRITES_ON_DESKTOP;
+  }
+
+  // ── Cached glow halo: one soft gradient bitmap per color ────────
+  const haloCache = {};
+  function getHaloSprite(hex) {
+    let h = haloCache[hex];
+    if (h) return h;
+    const N = 192;
+    h = document.createElement('canvas');
+    h.width = h.height = N;
+    const c  = h.getContext('2d');
+    const g  = c.createRadialGradient(N / 2, N / 2, N / 2 * 0.15, N / 2, N / 2, N / 2);
+    g.addColorStop(0, rgba(hex, 1));
+    g.addColorStop(1, rgba(hex, 0));
+    c.fillStyle = g;
+    c.fillRect(0, 0, N, N);
+    haloCache[hex] = h;
+    return h;
+  }
+
+  // ── Bake a fully-open flower into a bitmap ──────────────────────
+  // After the last petal opens the flower's shape never changes (only
+  // rotation / scale / glow do), so it's rendered once with the exact
+  // same drawing code and then just stamped each frame.
+  function bakeSprite(f) {
+    const R   = f.size * 1.55;                         // covers petals + stem + leaf
+    let   res = dpr * SPRITE_OVERSAMPLE;
+    res = Math.min(res, SPRITE_MAX_PX / (R * 2));
+    const px  = Math.max(8, Math.ceil(R * 2 * res));
+
+    const sc = document.createElement('canvas');
+    sc.width = sc.height = px;
+    const sctx = sc.getContext('2d');
+    sctx.setTransform(res, 0, 0, res, px / 2, px / 2);
+
+    const mainCtx = ctx;
+    ctx = sctx;                                        // draw functions use the module ctx
+    try {
+      ctx.save();
+      ctx.globalAlpha = Math.min(f.opacity, 1);        // same alpha the live draw uses
+      drawFlower(f, 999999);                           // age ≫ openEnd → fully open
+      ctx.restore();
+    } finally {
+      ctx = mainCtx;
+    }
+
+    f.sprite  = sc;
+    f.spriteR = px / 2 / res;
+  }
+
   // True when a flower (incl. halo + stem) is completely off-screen
   function isOffscreen(f) {
     const R = f.size * 2.2;
@@ -520,21 +584,21 @@ const FlowerScene = (() => {
       f._alpha = Math.min(age / 350, 1) * f.opacity;
       f._off   = isOffscreen(f);
 
+      // Bake the finished flower into a bitmap (a couple per frame max)
+      if (!f.sprite && !f._off && sincePop > 0 && spritesEnabled() &&
+          spritesThisFrame < SPRITES_PER_FRAME) {
+        bakeSprite(f);
+        spritesThisFrame++;
+      }
+
+      // Glow halo — same gradient as before, but from a cached bitmap
       if (glow > 0.01 && !f._off) {
         const R = f.size * (1.5 + 0.5 * openP) * scale;
-        ctx.save();
-        ctx.translate(f.x, f.y);
-        const g = ctx.createRadialGradient(0, 0, R * 0.15, 0, 0, R);
-        const hc = lighten(f.color, 0.35);
-        g.addColorStop(0, rgba(hc, Math.min(glow, 1) * 0.85 * f._alpha));
-        g.addColorStop(1, rgba(hc, 0));
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(0, 0, R, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.globalAlpha = Math.min(glow, 1) * 0.85 * f._alpha;
+        ctx.drawImage(getHaloSprite(lighten(f.color, 0.35)), f.x - R, f.y - R, R * 2, R * 2);
       }
     }
+    ctx.globalAlpha = 1;
 
     // Pass 2 — draw the flowers themselves on top of all halos
     // (small flowers first, big blooms on top)
@@ -544,12 +608,19 @@ const FlowerScene = (() => {
         if (f._off || f.big !== wantBig) continue;   // off-screen → nothing to see
 
         ctx.save();
-        ctx.globalAlpha = Math.min(f._alpha, 1);
         ctx.translate(f.x, f.y);
         ctx.rotate(f.rot);
         ctx.scale(f._scale, f._scale);
 
-        drawFlower(f, f._age);
+        if (f.sprite) {
+          // opacity is already baked into the bitmap
+          ctx.globalAlpha = 1;
+          const R = f.spriteR;
+          ctx.drawImage(f.sprite, -R, -R, R * 2, R * 2);
+        } else {
+          ctx.globalAlpha = Math.min(f._alpha, 1);
+          drawFlower(f, f._age);
+        }
 
         ctx.restore();
       }
@@ -673,22 +744,26 @@ const FlowerScene = (() => {
   }
 
   // ── ROSE: spiral layered petals, curled tips ─────────────────────
+  // dk = darken amount, lt = lighten amount (static → no per-frame allocation)
+  const ROSE_LAYERS = [
+    { count: 7, r: 0.92, petalH: 1.05, dk: 0.05, lt: 0    },
+    { count: 6, r: 0.68, petalH: 0.82, dk: 0,    lt: 0    },
+    { count: 5, r: 0.48, petalH: 0.65, dk: 0,    lt: 0.12 },
+    { count: 4, r: 0.28, petalH: 0.44, dk: 0,    lt: 0.24 },
+    { count: 3, r: 0.14, petalH: 0.28, dk: 0,    lt: 0.38 },
+  ];
+
   function drawRose(f, age, startMs) {
     const s = f.size;
     const c = f.color;
 
     // Draw layers from outer to inner so inner sits on top
-    const layers = [
-      { count: 7,  r: 0.92, petalH: 1.05, tilt: 0.28, colorFn: x => darken(c, 0.05) },
-      { count: 6,  r: 0.68, petalH: 0.82, tilt: 0.22, colorFn: x => c },
-      { count: 5,  r: 0.48, petalH: 0.65, tilt: 0.16, colorFn: x => lighten(c, 0.12) },
-      { count: 4,  r: 0.28, petalH: 0.44, tilt: 0.10, colorFn: x => lighten(c, 0.24) },
-      { count: 3,  r: 0.14, petalH: 0.28, tilt: 0.05, colorFn: x => lighten(c, 0.38) },
-    ];
+    const layers = ROSE_LAYERS;
 
     let petalIdx = 0;
     for (let li = 0; li < layers.length; li++) {
       const lyr = layers[li];
+      const layerCol = lyr.lt > 0 ? lighten(c, lyr.lt) : lyr.dk > 0 ? darken(c, lyr.dk) : c;
       const layerRotOffset = (li / layers.length) * Math.PI * 0.4;
 
       for (let i = 0; i < lyr.count; i++, petalIdx++) {
@@ -704,9 +779,9 @@ const FlowerScene = (() => {
         const petalH = s * lyr.r * lyr.petalH * t;
 
         const grad = ctx.createRadialGradient(0, -petalH * 0.5, 0, 0, -petalH * 0.3, petalH * 0.9);
-        grad.addColorStop(0, lighten(lyr.colorFn(), 0.25));
-        grad.addColorStop(0.5, lyr.colorFn());
-        grad.addColorStop(1, darken(lyr.colorFn(), 0.18));
+        grad.addColorStop(0, lighten(layerCol, 0.25));
+        grad.addColorStop(0.5, layerCol);
+        grad.addColorStop(1, darken(layerCol, 0.18));
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
@@ -731,7 +806,7 @@ const FlowerScene = (() => {
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(0, -petalH * 0.75);
-        ctx.strokeStyle = darken(lyr.colorFn(), 0.22);
+        ctx.strokeStyle = darken(layerCol, 0.22);
         ctx.lineWidth   = 0.4;
         ctx.globalAlpha *= 0.4;
         ctx.stroke();
@@ -754,17 +829,19 @@ const FlowerScene = (() => {
   }
 
   // ── PEONY: many ruffled, wide petals in tight concentric rings ──
+  const PEONY_RINGS = [
+  { count: 8, r: 0.95, w: 0.50, h: 0.55, rot: 0.00 },
+  { count: 8, r: 0.72, w: 0.42, h: 0.48, rot: 0.22 },
+  { count: 7, r: 0.52, w: 0.36, h: 0.40, rot: 0.10 },
+  { count: 6, r: 0.34, w: 0.30, h: 0.32, rot: 0.30 },
+  { count: 5, r: 0.18, w: 0.22, h: 0.24, rot: 0.15 },
+  ];
+
   function drawPeony(f, age, startMs) {
     const s = f.size;
     const c = f.color;
 
-    const rings = [
-      { count: 8, r: 0.95, w: 0.50, h: 0.55, rot: 0.00 },
-      { count: 8, r: 0.72, w: 0.42, h: 0.48, rot: 0.22 },
-      { count: 7, r: 0.52, w: 0.36, h: 0.40, rot: 0.10 },
-      { count: 6, r: 0.34, w: 0.30, h: 0.32, rot: 0.30 },
-      { count: 5, r: 0.18, w: 0.22, h: 0.24, rot: 0.15 },
-    ];
+    const rings = PEONY_RINGS;
 
     let petalIdx = 0;
     for (let ri = 0; ri < rings.length; ri++) {
@@ -889,18 +966,20 @@ const FlowerScene = (() => {
   }
 
   // ── RANUNCULUS: dense concentric rings of papery petals ─────────
+  const RANUNCULUS_RINGS = [
+  { count: 10, r: 0.90, pw: 0.22, ph: 0.42, rot: 0 },
+  { count:  9, r: 0.70, pw: 0.20, ph: 0.36, rot: 0.18 },
+  { count:  8, r: 0.52, pw: 0.18, ph: 0.30, rot: 0.12 },
+  { count:  6, r: 0.36, pw: 0.16, ph: 0.24, rot: 0.24 },
+  { count:  5, r: 0.22, pw: 0.14, ph: 0.18, rot: 0.08 },
+  { count:  4, r: 0.11, pw: 0.10, ph: 0.12, rot: 0.34 },
+  ];
+
   function drawRanunculus(f, age, startMs) {
     const s = f.size;
     const c = f.color;
 
-    const rings = [
-      { count: 10, r: 0.90, pw: 0.22, ph: 0.42, rot: 0 },
-      { count:  9, r: 0.70, pw: 0.20, ph: 0.36, rot: 0.18 },
-      { count:  8, r: 0.52, pw: 0.18, ph: 0.30, rot: 0.12 },
-      { count:  6, r: 0.36, pw: 0.16, ph: 0.24, rot: 0.24 },
-      { count:  5, r: 0.22, pw: 0.14, ph: 0.18, rot: 0.08 },
-      { count:  4, r: 0.11, pw: 0.10, ph: 0.12, rot: 0.34 },
-    ];
+    const rings = RANUNCULUS_RINGS;
 
     let petalIdx = 0;
     for (let ri = 0; ri < rings.length; ri++) {
@@ -1018,15 +1097,17 @@ const FlowerScene = (() => {
   // ── LOTUS (big): 3 layers of pointed, gradient petals that unfold ─
   // Outer petals open first, inner ones follow; each petal is deep at the
   // base and fades to a pale tip with a soft midrib — like a real lotus.
+  const LOTUS_LAYERS = [
+  { n: 9, len: 1.00, w: 0.30, rot: 0.00, dk: 0.10, lt: 0.00 },
+  { n: 7, len: 0.80, w: 0.27, rot: 0.22, dk: 0.04, lt: 0.05 },
+  { n: 6, len: 0.58, w: 0.23, rot: 0.50, dk: 0.00, lt: 0.14 },
+  ];
+
   function drawLotus(f, age, startMs) {
     const s = f.size;
     const c = f.color;
 
-    const layers = [
-      { n: 9, len: 1.00, w: 0.30, rot: 0.00, dk: 0.10, lt: 0.00 },
-      { n: 7, len: 0.80, w: 0.27, rot: 0.22, dk: 0.04, lt: 0.05 },
-      { n: 6, len: 0.58, w: 0.23, rot: 0.50, dk: 0.00, lt: 0.14 },
-    ];
+    const layers = LOTUS_LAYERS;
 
     let idx = 0;
     for (let li = 0; li < layers.length; li++) {
@@ -1199,13 +1280,26 @@ const FlowerScene = (() => {
   function rgbToHex(r,g,b) {
     return '#'+[r,g,b].map(v=>Math.min(255,Math.max(0,Math.round(v))).toString(16).padStart(2,'0')).join('');
   }
+  // Memoized: the same few colors are requested thousands of times per
+  // second, so parse/convert once and reuse (removes most GC garbage).
+  const _lightenCache = {}, _darkenCache = {};
   function lighten(hex, a) {
-    const [r,g,b] = hexToRgb(hex);
-    return rgbToHex(r+(255-r)*a, g+(255-g)*a, b+(255-b)*a);
+    const m = _lightenCache[hex] || (_lightenCache[hex] = {});
+    let v = m[a];
+    if (v === undefined) {
+      const [r,g,b] = hexToRgb(hex);
+      v = m[a] = rgbToHex(r+(255-r)*a, g+(255-g)*a, b+(255-b)*a);
+    }
+    return v;
   }
   function darken(hex, a) {
-    const [r,g,b] = hexToRgb(hex);
-    return rgbToHex(r*(1-a), g*(1-a), b*(1-a));
+    const m = _darkenCache[hex] || (_darkenCache[hex] = {});
+    let v = m[a];
+    if (v === undefined) {
+      const [r,g,b] = hexToRgb(hex);
+      v = m[a] = rgbToHex(r*(1-a), g*(1-a), b*(1-a));
+    }
+    return v;
   }
 
   // ── Math helpers ─────────────────────────────────────────────────
@@ -1224,6 +1318,7 @@ const FlowerScene = (() => {
 
   function clear() {
     if (ctx) ctx.clearRect(0, 0, W, H);
+    for (const f of flowers) f.sprite = null;   // free bitmap memory
   }
 
   return { init, clear };
