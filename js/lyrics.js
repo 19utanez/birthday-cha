@@ -23,20 +23,23 @@ const LyricsScene = (() => {
   let chipScheduled = false;
 
   // Happy Birthday melody — [note in Hz, duration in beats]
-  // Each beat ≈ 0.58s (~52 BPM — slower, more emotional feel)
-  const BEAT = 0.58;
+  // BEAT drives both chiptune and lyric timing — keep in sync with CONFIG.lyricTimings
+  const BEAT = 0.46;
   const MELODY = [
-    // "Hap-py birth-day to you"
-    [392.00, 0.75], [392.00, 0.25], [440.00, 1.0 ], [392.00, 1.0 ],
+    // line 1 — "Hap-py birth-day to you,"  (2.76s)
+    [392.00, 0.75], [392.00, 0.25], [440.00, 1.0], [392.00, 1.0],
     [523.25, 1.0 ], [493.88, 2.0 ],
-    // "Hap-py birth-day to you"
-    [392.00, 0.75], [392.00, 0.25], [440.00, 1.0 ], [392.00, 1.0 ],
+    // line 2 — "Hap-py birth-day to you,"  (2.76s)
+    [392.00, 0.75], [392.00, 0.25], [440.00, 1.0], [392.00, 1.0],
     [587.33, 1.0 ], [523.25, 2.0 ],
-    // "Hap-py birth-day, hap-py birth-day"
-    [392.00, 0.75], [392.00, 0.25], [784.00, 1.0 ], [659.25, 1.0 ],
-    [523.25, 1.0 ], [493.88, 1.0 ], [440.00, 2.0 ],
-    [698.46, 0.75], [698.46, 0.25], [659.25, 1.0 ], [523.25, 1.0 ],
-    [587.33, 1.0 ], [523.25, 2.0 ],
+    // line 3 — "Hap-py birth-day, hap-py birth-day,"  (5.98s)
+    [392.00, 0.75], [392.00, 0.25], [784.00, 1.0], [659.25, 1.0],
+    [523.25, 1.0 ], [493.88, 1.0], [440.00, 2.0],
+    [698.46, 0.75], [698.46, 0.25], [659.25, 1.0], [523.25, 1.0],
+    [587.33, 1.0 ], [523.25, 2.0],
+    // line 4 — "Hap-py birth-day to you."  (3.68s)
+    [392.00, 0.75], [392.00, 0.25], [392.00, 1.0], [349.23, 1.0],
+    [523.25, 1.0 ], [493.88, 1.0], [440.00, 2.0],
   ];
 
   function initChiptune() {
