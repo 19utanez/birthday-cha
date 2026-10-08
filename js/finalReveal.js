@@ -947,7 +947,7 @@ const BouquetPopup = (() => {
         row.id = 'btn-row';
         row.style.cssText = `
           display:flex; align-items:center; justify-content:center; gap:18px;
-          width:100%; padding:10px 0 16px; background:transparent;
+          width:100%; padding:10px 0 52px; background:transparent;
           pointer-events:none; z-index:60;
         `;
       }
