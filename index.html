@@ -6,7 +6,17 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Happy Birthday</title>
+  <title>alpha testing for design</title>
+  <meta name="description" content="alpha testing for design" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Link preview (Messenger / WhatsApp / Discord / etc.) — keeps the surprise hidden -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="alpha testing for design" />
+  <meta property="og:description" content="alpha testing for design" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="alpha testing for design" />
+  <meta name="twitter:description" content="alpha testing for design" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -120,9 +130,11 @@
           <div id="photo-frame">
             <div id="photo-frame-inner">
               <div id="photo-glow"></div>
+              <!-- src is set by JS after load (see bottom of file) so link-preview
+                   crawlers, which don't run JS, never see the photo -->
               <img id="girlfriend-photo"
-                   src="assets/girlfriend/girlfriend.jpg"
-                   alt="Happy Birthday"
+                   data-src="assets/girlfriend/girlfriend.jpg"
+                   alt=""
                    draggable="false" />
             </div>
           </div>
@@ -153,6 +165,17 @@
 
     </div>
   </div>
+
+  <!-- Load the surprise photo only in a real browser (not for link-preview crawlers) -->
+  <script>
+    (function () {
+      var img = document.getElementById('girlfriend-photo');
+      if (!img) return;
+      function load() { if (!img.getAttribute('src')) img.src = img.getAttribute('data-src'); }
+      if (document.readyState === 'complete') load();
+      else window.addEventListener('load', load);
+    })();
+  </script>
 
   <!-- GSAP from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
