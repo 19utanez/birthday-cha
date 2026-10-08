@@ -33,8 +33,8 @@ const CatScene = (() => {
   let screenW    = 0;
   let screenH    = 0;
 
-  // Bob rhythm — must match BEAT in lyrics.js (0.46s = ~130 BPM)
-  const BEAT_SEC = 0.46;
+  // Bob rhythm — must match BEAT in lyrics.js (0.58s = ~103 BPM)
+  const BEAT_SEC = 0.58;
   const BOB_RATE = (Math.PI * 2) / BEAT_SEC;  // rad/s
 
   let walkPhase     = 0;
