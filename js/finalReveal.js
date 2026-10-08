@@ -1289,41 +1289,45 @@ const BouquetPopup = (() => {
     }
     ctx.stroke();
 
-    // ── Fanned paper panels at top (6 panels spread wide) ──
+    // ── Fanned paper panels at top (6 panels, tapered trapezoid shape) ──
     ctx.globalAlpha = eased;
     const panelCount = 6;
-    const panelW = W * 0.09;
-    const panelH = H * 0.14;
-    const spreadLeft  = cx - W * 0.38;
-    const spreadRight = cx + W * 0.38;
+    const panelW = W * 0.082;
+    const panelH = H * 0.13;
+    const spreadLeft  = cx - W * 0.30;
+    const spreadRight = cx + W * 0.30;
     for (let i = 0; i < panelCount; i++) {
       const fr = i / (panelCount - 1);
       const panelCx = spreadLeft + (spreadRight - spreadLeft) * fr;
-      const rotAngle = (fr - 0.5) * 0.85;
-      const shade = 0.06 * Math.abs(fr - 0.5) * 2;
-      const panelCol = shade > 0.02 ? darken('#ffffff', shade) : '#ffffff';
+      const rotAngle = (fr - 0.5) * 0.70;
 
       ctx.save();
       ctx.translate(panelCx, base);
       ctx.rotate(rotAngle);
 
-      const pg = ctx.createLinearGradient(-panelW * 0.5, -panelH, panelW * 0.5, 0);
-      pg.addColorStop(0,   lighten(panelCol, 0.05));
-      pg.addColorStop(0.5, panelCol);
-      pg.addColorStop(1,   darken(panelCol, 0.08));
+      // Trapezoid: wider at top, narrower at bottom — natural paper fan shape
+      const topW  = panelW * 0.55;
+      const botW  = panelW * 0.22;
+
+      const pg = ctx.createLinearGradient(0, -panelH, 0, 0);
+      pg.addColorStop(0,   '#ffffff');
+      pg.addColorStop(0.4, '#fdf8fc');
+      pg.addColorStop(1,   '#f8eef4');
 
       ctx.beginPath();
-      ctx.moveTo(-panelW * 0.5, 0);
-      ctx.lineTo(-panelW * 0.5, -panelH);
-      ctx.lineTo( panelW * 0.5, -panelH);
-      ctx.lineTo( panelW * 0.5, 0);
+      ctx.moveTo(-botW, 0);
+      ctx.lineTo(-topW, -panelH);
+      // Slightly curved top edge
+      ctx.quadraticCurveTo(0, -panelH - panelH * 0.08, topW, -panelH);
+      ctx.lineTo(botW, 0);
       ctx.closePath();
       ctx.fillStyle = pg;
       ctx.fill();
 
-      ctx.strokeStyle = '#c8c8c8';
-      ctx.lineWidth = 0.8;
-      ctx.globalAlpha = eased * 0.35;
+      // Soft edge shadow for depth
+      ctx.strokeStyle = 'rgba(200,160,180,0.25)';
+      ctx.lineWidth = 0.7;
+      ctx.globalAlpha = eased * 0.60;
       ctx.stroke();
 
       ctx.restore();
@@ -1343,10 +1347,10 @@ const BouquetPopup = (() => {
     // ── Long ribbon tails hanging down from knot ──
     const tailW = bowR * 0.28;
 
-    // Left tail: curves down-left
+    // Left tail: curves gently down and slightly left — stays near cone centerline
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.quadraticCurveTo(cx - W * 0.08, cy + H * 0.12, cx - W * 0.18, cy + H * 0.36);
+    ctx.quadraticCurveTo(cx - W * 0.04, cy + H * 0.10, cx - W * 0.07, cy + H * 0.28);
     ctx.lineWidth   = tailW;
     ctx.strokeStyle = C.bowPink;
     ctx.lineCap     = 'round';
@@ -1357,10 +1361,10 @@ const BouquetPopup = (() => {
     ctx.stroke();
     ctx.globalAlpha = alpha;
 
-    // Right tail: curves down-right
+    // Right tail: curves gently down and slightly right
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.quadraticCurveTo(cx + W * 0.07, cy + H * 0.13, cx + W * 0.15, cy + H * 0.38);
+    ctx.quadraticCurveTo(cx + W * 0.04, cy + H * 0.11, cx + W * 0.08, cy + H * 0.29);
     ctx.lineWidth   = tailW;
     ctx.strokeStyle = C.bowPink;
     ctx.lineCap     = 'round';
@@ -1767,9 +1771,10 @@ const BouquetPopup = (() => {
     if (spread <= 0) return;
     const branches = 8;
     const lenFracs = [0.70, 0.95, 0.60, 0.85, 0.75, 0.65, 0.80, 0.90];
+    // Simple dot clusters — avoid multi-arc petal pattern that looks like asterisks
     const dotOffsets = [
-      [0, 0, 2.6], [-0.50, 0.45, 2.0], [0.48, 0.40, 1.9],
-      [-0.25, 0.85, 1.6], [0.28, 0.78, 1.5], [0, 0.55, 1.8],
+      [0, 0], [-0.50, 0.45], [0.48, 0.40],
+      [-0.25, 0.85], [0.28, 0.78], [0, 0.55],
     ];
     for (let b = 0; b < branches; b++) {
       const baseAngle = (b / branches) * Math.PI * 2 - 0.20;
@@ -1780,20 +1785,21 @@ const BouquetPopup = (() => {
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by);
       ctx.strokeStyle='rgba(100,135,85,0.28)'; ctx.lineWidth=0.65; ctx.stroke();
 
-      dotOffsets.forEach(([ox, oy, dr]) => {
+      dotOffsets.forEach(([ox, oy]) => {
         const da = baseAngle + ox * 0.60;
         const dl = spread * (0.08 + oy * 0.05);
         const fx = bx + Math.cos(da) * dl;
         const fy = by + Math.sin(da) * dl;
-        // White petals
-        for (let p=0; p<5; p++) {
-          const pa=(p/5)*Math.PI*2;
-          ctx.beginPath();
-          ctx.arc(fx+Math.cos(pa)*dr*0.55, fy+Math.sin(pa)*dr*0.55, dr*0.50, 0, Math.PI*2);
-          ctx.fillStyle='rgba(255,252,250,0.92)'; ctx.fill();
-        }
-        ctx.beginPath(); ctx.arc(fx, fy, dr*0.32, 0, Math.PI*2);
-        ctx.fillStyle='#fff3c0'; ctx.fill();
+        // Single small filled circle — clean dot, no asterisk effect
+        ctx.beginPath();
+        ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,252,250,0.95)';
+        ctx.fill();
+        // Tiny yellow center dot
+        ctx.beginPath();
+        ctx.arc(fx, fy, 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff3c0';
+        ctx.fill();
       });
     }
   }
