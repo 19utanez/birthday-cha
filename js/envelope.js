@@ -51,6 +51,30 @@ const EnvelopeScene = (() => {
     gsap.set(letter, { opacity: 0, y: 0 });
     gsap.set(prompt, { opacity: 0 });
 
+    // Show silent-mode reminder if not already shown
+    if (!document.getElementById('silent-notice')) {
+      const notice = document.createElement('div');
+      notice.id = 'silent-notice';
+      notice.innerHTML = '🔔 Turn off silent mode for music';
+      notice.style.cssText = `
+        position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+        background:rgba(30,10,18,0.72); color:#fff;
+        font-size:0.78rem; letter-spacing:0.03em;
+        padding:8px 18px; border-radius:20px;
+        backdrop-filter:blur(6px);
+        pointer-events:none; z-index:999;
+        white-space:nowrap;
+        opacity:0; transition:opacity 0.5s ease;
+      `;
+      document.body.appendChild(notice);
+      setTimeout(() => { notice.style.opacity = '1'; }, 800);
+      // Fade out after 5s
+      setTimeout(() => {
+        notice.style.opacity = '0';
+        setTimeout(() => notice.remove(), 600);
+      }, 5500);
+    }
+
     // Fade-in + float the envelope into view
     const intro = gsap.timeline();
 
@@ -190,29 +214,51 @@ const EnvelopeScene = (() => {
   function unlockAudio() {
     try {
       if (window._audioUnlocked) return;
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      audioCtx = new Ctx();
-      // Play a zero-duration silent buffer to satisfy the browser
+      const CtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!CtxClass) return;
+
+      // Create context synchronously inside the gesture — iOS requirement
+      audioCtx = new CtxClass();
+
+      // Play a zero-duration silent buffer to satisfy iOS
       const buf = audioCtx.createBuffer(1, 1, 22050);
       const src = audioCtx.createBufferSource();
       src.buffer = buf;
       src.connect(audioCtx.destination);
       src.start(0);
+
       window._audioUnlocked = true;
       window._audioContext  = audioCtx;
 
-      // Also unlock <audio> element playback on iOS by playing a silent stub
-      // inside this gesture handler — this primes the media pipeline so
-      // audio.play() works later without needing another gesture.
-      try {
-        const silentAudio = new Audio();
-        silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-        silentAudio.volume = 0;
-        const playPromise = silentAudio.play();
-        if (playPromise) playPromise.catch(() => {});
-        window._audioUnlockedEl = silentAudio;
-      } catch(e) {}
+      // Unlock the actual birthday <audio> element on this same gesture.
+      // iOS only allows audio.play() inside a direct user gesture, so we
+      // call play()+pause() immediately — this primes the element so
+      // LyricsScene.start() can play it freely later without another tap.
+      const doUnlockAudioEl = (el) => {
+        if (!el) return;
+        el.muted = true;
+        const p = el.play();
+        if (p) p.then(() => { el.pause(); el.currentTime = 0; el.muted = false; }).catch(() => {});
+      };
+
+      // Unlock the birthday song element if already created
+      if (window._birthdayAudio) doUnlockAudioEl(window._birthdayAudio);
+
+      // Also watch for it being created shortly after (if lyrics.js inits later)
+      const checkInterval = setInterval(() => {
+        if (window._birthdayAudio) {
+          doUnlockAudioEl(window._birthdayAudio);
+          clearInterval(checkInterval);
+        }
+      }, 100);
+      setTimeout(() => clearInterval(checkInterval), 3000);
+
+      // Keep context alive on every subsequent touch (iOS suspends it on blur)
+      document.addEventListener('touchstart', () => {
+        if (window._audioContext && window._audioContext.state === 'suspended') {
+          window._audioContext.resume().catch(() => {});
+        }
+      }, { passive: true });
 
       console.log('Audio context unlocked.');
     } catch (err) {
