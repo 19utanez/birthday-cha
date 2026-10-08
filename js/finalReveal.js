@@ -103,21 +103,19 @@ const FinalRevealScene = (() => {
 
     const bCX = W * 0.50;   // bouquet center X
 
-    // ── Vertical slot: between the photo frame's bottom edge and the
-    //    birthday message's top edge (measured from the real DOM). ──
-    const frameEl = document.getElementById('photo-frame');
-    const msgEl   = document.getElementById('birthday-message');
-    const frameBottom = frameEl.getBoundingClientRect().bottom + 10; // + outline
-    const msgTop      = msgEl.getBoundingClientRect().top;
-    const slotTop     = frameBottom;
-    const slotBottom  = msgTop > slotTop + 10 ? msgTop : slotTop + H * 0.18;
-    const slotH       = slotBottom - slotTop;
+    // ── Place bouquet flush below the photo frame ──────────────────
+    const frameEl     = document.getElementById('photo-frame');
+    const msgEl       = document.getElementById('birthday-message');
+    const frameBottom = frameEl.getBoundingClientRect().bottom + 8;
 
-    // Un-scaled bouquet spans roughly 0.18*H vertically around bCY0
-    const BOUQUET_H = H * 0.18;
-    const k = Math.max(0.42, Math.min(0.68, (slotH * 0.88) / BOUQUET_H));
-    const bCY0 = H * 0.46;                         // layout origin used below
-    const bCY  = slotTop + slotH * 0.48;   // where it is finally placed
+    // Fixed scale — medium size, not driven by slot measurement
+    const k    = 0.62;
+    const bCY0 = H * 0.46;  // layout origin
+    const bCY  = frameBottom + H * 0.075;  // sit close under the frame
+
+    // Pull the message up to close the gap below the bouquet
+    const bouquetBottom = frameBottom + H * 0.14;
+    if (msgEl) msgEl.style.marginTop = Math.max(0, bouquetBottom - msgEl.getBoundingClientRect().top) + 'px';
 
     // Colour palette
     const PINK     = '#e8849a';
