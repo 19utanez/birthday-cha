@@ -47,11 +47,12 @@ const CONFIG = {
   // ── Lyric timing — adjust showAt (seconds) to match your audio ─
   // showAt  : seconds after audio starts when line appears
   // holdFor : seconds the line stays active before lyrics end signal
+  // showAt/holdFor derived from chiptune melody beats (BEAT=0.46s) + 0.5s lead-in
   lyricTimings: [
-    { showAt: 0.5,  holdFor: 3.8 },   // "Happy birthday to you,"
-    { showAt: 4.8,  holdFor: 3.8 },   // "Happy birthday to you,"
-    { showAt: 9.0,  holdFor: 4.2 },   // "Happy birthday, happy birthday,"
-    { showAt: 13.6, holdFor: 4.2 },   // "Happy birthday to you."
+    { showAt:  0.50, holdFor: 2.61 }, // "Happy birthday to you,"
+    { showAt:  3.26, holdFor: 2.61 }, // "Happy birthday to you,"
+    { showAt:  6.02, holdFor: 5.83 }, // "Happy birthday, happy birthday,"
+    { showAt: 12.00, holdFor: 3.07 }, // "Happy birthday to you."
   ],
 
   // ── Flower animation settings (used in Phase 2) ────────────────
