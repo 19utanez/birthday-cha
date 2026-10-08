@@ -605,7 +605,14 @@ const FinalRevealScene = (() => {
 
   // ── Fill name + message lines from CONFIG (single source of truth) ──
   function populateMessage() {
-    document.getElementById('msg-name').textContent = CONFIG.girlfriend.name;
+    const nameEl = document.getElementById('msg-name');
+    nameEl.textContent = CONFIG.girlfriend.name;
+    nameEl.style.cssText += `
+      text-decoration: underline;
+      text-decoration-color: rgba(200,80,106,0.55);
+      text-underline-offset: 5px;
+      text-decoration-thickness: 2px;
+    `;
 
     const linesEl = document.getElementById('msg-lines');
     linesEl.innerHTML = '';
@@ -977,6 +984,8 @@ const BouquetPopup = (() => {
         btn.style.transform = 'scale(1)';
         btn.style.boxShadow = '0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset';
       };
+      // Will be moved into btn-row by onMessageComplete; park in body for now
+      document.body.appendChild(btn);
     }
 
     if (!document.getElementById('bouquet-overlay')) {
