@@ -1,17 +1,24 @@
 /**
  * flowers.js  ── UPGRADED v2  (bigger · blooming · radial spread)
+ *               + mobile performance mode
  * ─────────────────────────────────────────────────────────────────
  * After the mail opens, a bloom-flash erupts from the center of the
  * screen and a circular shockwave spreads outward. Giant flowers
  * burst open ring-by-ring right as the wave passes them, each with
  * a glowing halo, a "pop" when fully open, and a puff of sparkles.
  *
- * What changed vs v1:
- *  - Flowers are ~2.5x larger (scaled to the screen size)
- *  - Bloom effects: halo glow, scale-up while opening, bloom "pop",
- *    gentle breathing, sparkle/pollen burst at full bloom
- *  - Spawn pattern: concentric rings expanding from the center,
- *    timed to a visible circular ripple, with a soft swirl motion
+ * Mobile mode (auto-detected) — the original design is untouched:
+ * same flower sizes, same ring layout, same drawing code, same
+ * palettes, same animation and same music. Only the load is reduced:
+ *  - fewer flowers (MOBILE_MAX_FLOWERS, thinned randomly like before)
+ *  - lower canvas resolution (devicePixelRatio capped at 1.5)
+ *  - fewer sparkle particles
+ *  - flowers fully off-screen are skipped
+ *
+ * Big blooms — a few large, realistic flowers (layered lotus and
+ * speckled lily) bloom among the regular ones. Only a handful are
+ * added (BIG_FLOWERS_*) and the small flowers underneath them are
+ * removed, so the total draw load stays about the same.
  */
 
 const FlowerScene = (() => {
@@ -30,11 +37,21 @@ const FlowerScene = (() => {
   let maxR          = 0;     // distance from center to farthest corner
   let sizeBase      = 60;    // base flower size, scaled to screen
 
+  // ── Performance mode ────────────────────────────────────────────
+  let isMobile      = false;
+  let maxFlowers    = 150;
+  let maxParticles  = 900;
+  let sparkleCount  = 8;
+
   const SPAWN_WINDOW = 3800;                 // ms — wave travels center → corners
   const HOLD         = 2400;                 // ms at peak before handing off
   const BLOOM_DUR    = SPAWN_WINDOW + HOLD;
   const WAVE_MS      = SPAWN_WINDOW * 0.85;  // time for the ripple to reach the edge
-  const MAX_FLOWERS  = 150;                  // performance cap
+
+  const DESKTOP_MAX_FLOWERS = 150;           // original cap
+  const MOBILE_MAX_FLOWERS  = 55;            // ← lower this for even lighter mobile
+  const DESKTOP_MAX_DPR     = 2;             // original
+  const MOBILE_MAX_DPR      = 1.5;
 
   // ── Palette — romantic blush / rose / petal tones ──────────────
   const PALETTES = {
@@ -43,14 +60,31 @@ const FlowerScene = (() => {
     blossom:  ['#ffd7e8', '#ffb3d1', '#ff8fab', '#ffc8d8', '#ffe4f0'],
     ranunculus:['#f9a8c0', '#f472a0', '#e8648a', '#fbd0df', '#fcecf2'],
     magnolia: ['#fef0e8', '#f9d8c8', '#f0b8a0', '#fce8e0', '#fff5f0'],
+    // big blooms (not in TYPES → never picked for the small flowers)
+    lotus:    ['#f9a8c0', '#f48fb1', '#ffc0d6', '#fbd0df', '#ff9bb8'],
+    lily:     ['#ffe4ee', '#ffc2d6', '#fde8ef', '#ffd0e0', '#fff0f4'],
   };
 
   const TYPES = ['rose', 'peony', 'blossom', 'ranunculus', 'magnolia'];
+  const BIG_TYPES = ['lotus', 'lily'];
 
   // Real petal counts (must match what each draw function renders)
-  const PETAL_COUNTS = { rose: 25, peony: 34, blossom: 5, ranunculus: 42, magnolia: 9 };
+  const PETAL_COUNTS = { rose: 25, peony: 34, blossom: 5, ranunculus: 42, magnolia: 9,
+                         lotus: 22, lily: 6 };
+
+  // How many large realistic blooms to add
+  const BIG_FLOWERS_DESKTOP = 8;
+  const BIG_FLOWERS_MOBILE  = 4;             // ← lower this if phones still lag
 
   const SPARKLE_COLORS = ['#fff8e1', '#ffe9a8', '#ffd6e5', '#ffffff', '#ffc2d6'];
+
+  // ── Device detection ────────────────────────────────────────────
+  function detectMobile() {
+    const ua     = /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent || '');
+    const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const small  = Math.min(window.innerWidth, window.innerHeight) < 600;
+    return ua || coarse || small;
+  }
 
   // ── Public init ─────────────────────────────────────────────────
   function init() {
@@ -63,7 +97,8 @@ const FlowerScene = (() => {
 
   function resize() {
     if (!canvas) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    isMobile = detectMobile();
+    dpr = Math.min(window.devicePixelRatio || 1, isMobile ? MOBILE_MAX_DPR : DESKTOP_MAX_DPR);
     W   = window.innerWidth;
     H   = window.innerHeight;
     canvas.width  = Math.round(W * dpr);
@@ -223,6 +258,11 @@ const FlowerScene = (() => {
 
   // ── Spawn schedule: concentric rings spreading from the center ──
   function buildSpawnSchedule() {
+    isMobile     = detectMobile();
+    maxFlowers   = isMobile ? MOBILE_MAX_FLOWERS : DESKTOP_MAX_FLOWERS;
+    maxParticles = isMobile ? 250 : 900;
+    sparkleCount = isMobile ? 4 : 8;
+
     sizeBase = clamp(Math.min(W, H) * 0.09, 38, 82);
     maxR     = Math.hypot(W, H) * 0.5;
 
@@ -235,7 +275,7 @@ const FlowerScene = (() => {
     hero.type    = 'rose';
     hero.petalCount = PETAL_COUNTS.rose;
     hero.t       = 0;
-    const list = [];
+    let list = [];
 
     for (let r = ringGap; r < maxR + sizeBase * 0.5; r += ringGap) {
       const n      = Math.max(5, Math.round((Math.PI * 2 * r) / spacing));
@@ -252,12 +292,53 @@ const FlowerScene = (() => {
       }
     }
 
-    // Performance cap — thin out randomly, keep the hero
-    while (list.length > MAX_FLOWERS - 1) {
+    // ── Big realistic blooms — few, spread out, fully on-screen ────
+    const bigTarget = isMobile ? BIG_FLOWERS_MOBILE : BIG_FLOWERS_DESKTOP;
+    const bigs = [];
+    for (let tries = 0; bigs.length < bigTarget && tries < 120; tries++) {
+      const size = sizeBase * rand(2.1, 2.7);
+      const r    = maxR * rand(0.30, 0.62);
+      const ang  = rand(0, Math.PI * 2);
+      const x    = cx + Math.cos(ang) * r;
+      const y    = cy + Math.sin(ang) * r;
+      const pad  = size * 0.8;
+
+      if (x < pad || x > W - pad || y < pad || y > H - pad) continue;               // stay on screen
+      if (Math.hypot(x - cx, y - cy) < size * 0.9 + sizeBase * 1.9) continue;       // keep clear of hero
+      if (bigs.some(o => Math.hypot(o.px - x, o.py - y) < (o.size + size) * 0.85)) continue;
+
+      const type = BIG_TYPES[bigs.length % BIG_TYPES.length];
+      const pal  = PALETTES[type];
+      const d    = makeDef(r, ang, size);
+      d.type       = type;
+      d.color      = pal[Math.floor(Math.random() * pal.length)];
+      d.accent     = pal[Math.floor(Math.random() * pal.length)];
+      d.petalCount = PETAL_COUNTS[type];
+      d.petalDelay = rand(48, 62);        // slower, more dramatic unfolding
+      d.petalDur   = rand(750, 980);
+      d.stemLen    = size * rand(0.45, 0.7);
+      d.rotSpeed  *= 0.5;
+      d.opacity    = 1;
+      d.big        = true;
+      d.px = x; d.py = y;
+      bigs.push(d);
+    }
+
+    // Remove small flowers that would sit underneath a big bloom
+    if (bigs.length) {
+      list = list.filter(d => {
+        const x = cx + Math.cos(d.ang) * d.r;
+        const y = cy + Math.sin(d.ang) * d.r;
+        return bigs.every(o => Math.hypot(o.px - x, o.py - y) > o.size * 0.85);
+      });
+    }
+
+    // Performance cap — thin out randomly, keep the hero + big blooms
+    while (list.length > maxFlowers - 1 - bigs.length) {
       list.splice(Math.floor(Math.random() * list.length), 1);
     }
 
-    spawnSchedule = [hero, ...list];
+    spawnSchedule = [hero, ...bigs, ...list];
     spawnSchedule.sort((a, b) => a.t - b.t);
   }
 
@@ -334,6 +415,7 @@ const FlowerScene = (() => {
       // moment (ms after spawn) when the very last petal is fully open
       openEndMs: def.stemDur * 0.55 + def.petalDelay * (def.petalCount - 1) + def.petalDur,
       burst: false,
+      big: !!def.big,
       _age: 0, _scale: 1, _alpha: 1,
     };
   }
@@ -387,6 +469,12 @@ const FlowerScene = (() => {
     ctx.restore();
   }
 
+  // True when a flower (incl. halo + stem) is completely off-screen
+  function isOffscreen(f) {
+    const R = f.size * 2.2;
+    return f.x < -R || f.x > W + R || f.y < -R || f.y > H + R;
+  }
+
   // ── Update + draw flowers ────────────────────────────────────────
   function updateAndDraw(elapsed, dt) {
     const cx = W * 0.5, cy = H * 0.5;
@@ -430,8 +518,9 @@ const FlowerScene = (() => {
 
       f._scale = scale;
       f._alpha = Math.min(age / 350, 1) * f.opacity;
+      f._off   = isOffscreen(f);
 
-      if (glow > 0.01) {
+      if (glow > 0.01 && !f._off) {
         const R = f.size * (1.5 + 0.5 * openP) * scale;
         ctx.save();
         ctx.translate(f.x, f.y);
@@ -448,23 +537,29 @@ const FlowerScene = (() => {
     }
 
     // Pass 2 — draw the flowers themselves on top of all halos
-    for (const f of flowers) {
-      ctx.save();
-      ctx.globalAlpha = Math.min(f._alpha, 1);
-      ctx.translate(f.x, f.y);
-      ctx.rotate(f.rot);
-      ctx.scale(f._scale, f._scale);
+    // (small flowers first, big blooms on top)
+    for (let pass = 0; pass < 2; pass++) {
+      const wantBig = pass === 1;
+      for (const f of flowers) {
+        if (f._off || f.big !== wantBig) continue;   // off-screen → nothing to see
 
-      drawFlower(f, f._age);
+        ctx.save();
+        ctx.globalAlpha = Math.min(f._alpha, 1);
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.rot);
+        ctx.scale(f._scale, f._scale);
 
-      ctx.restore();
+        drawFlower(f, f._age);
+
+        ctx.restore();
+      }
     }
   }
 
   // ── Sparkle / pollen burst when a flower finishes blooming ──────
   function spawnSparkles(f) {
-    if (particles.length > 900) return;
-    const n = 8;
+    if (particles.length > maxParticles) return;
+    const n = sparkleCount;
     for (let i = 0; i < n; i++) {
       const a  = rand(0, Math.PI * 2);
       const sp = rand(35, 120) * (f.size / 60);
@@ -533,6 +628,8 @@ const FlowerScene = (() => {
       case 'blossom':     drawBlossom(f, age, petalStartMs);     break;
       case 'ranunculus':  drawRanunculus(f, age, petalStartMs);  break;
       case 'magnolia':    drawMagnolia(f, age, petalStartMs);    break;
+      case 'lotus':       drawLotus(f, age, petalStartMs);       break;
+      case 'lily':        drawLily(f, age, petalStartMs);        break;
     }
   }
 
@@ -914,6 +1011,172 @@ const FlowerScene = (() => {
         ctx.fillStyle = '#ffd700';
         ctx.globalAlpha *= 0.85;
         ctx.fill();
+      }
+    }
+  }
+
+  // ── LOTUS (big): 3 layers of pointed, gradient petals that unfold ─
+  // Outer petals open first, inner ones follow; each petal is deep at the
+  // base and fades to a pale tip with a soft midrib — like a real lotus.
+  function drawLotus(f, age, startMs) {
+    const s = f.size;
+    const c = f.color;
+
+    const layers = [
+      { n: 9, len: 1.00, w: 0.30, rot: 0.00, dk: 0.10, lt: 0.00 },
+      { n: 7, len: 0.80, w: 0.27, rot: 0.22, dk: 0.04, lt: 0.05 },
+      { n: 6, len: 0.58, w: 0.23, rot: 0.50, dk: 0.00, lt: 0.14 },
+    ];
+
+    let idx = 0;
+    for (let li = 0; li < layers.length; li++) {
+      const lyr  = layers[li];
+      const base = lighten(darken(c, lyr.dk), lyr.lt);
+
+      for (let i = 0; i < lyr.n; i++, idx++) {
+        const t = petalOpenT(age, startMs, f, idx);
+        if (t <= 0) continue;
+
+        const h = s * lyr.len * t;
+        const w = s * lyr.w * t;
+
+        ctx.save();
+        ctx.rotate((i / lyr.n) * Math.PI * 2 + lyr.rot);
+
+        const grad = ctx.createLinearGradient(0, 0, 0, -h);
+        grad.addColorStop(0,    darken(base, 0.18));
+        grad.addColorStop(0.35, base);
+        grad.addColorStop(0.8,  lighten(base, 0.30));
+        grad.addColorStop(1,    lighten(base, 0.60));
+
+        // Pointed petal, widest around 40% of its length
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-w * 0.9, -h * 0.25, -w * 0.8, -h * 0.70, 0, -h);
+        ctx.bezierCurveTo( w * 0.8, -h * 0.70,  w * 0.9, -h * 0.25, 0, 0);
+        ctx.fillStyle = grad;
+        ctx.globalAlpha *= 0.93;
+        ctx.fill();
+
+        // Soft midrib
+        ctx.beginPath();
+        ctx.moveTo(0, -h * 0.08);
+        ctx.lineTo(0, -h * 0.85);
+        ctx.strokeStyle = lighten(base, 0.5);
+        ctx.lineWidth   = Math.max(0.6, s * 0.012);
+        ctx.globalAlpha *= 0.35;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // Golden seed pod + ring of stamens
+    const t0 = petalOpenT(age, startMs, f, 0);
+    if (t0 > 0.3) {
+      const pr = s * 0.11 * t0;
+      const pg = ctx.createRadialGradient(0, 0, 0, 0, 0, pr);
+      pg.addColorStop(0, '#ffe98a');
+      pg.addColorStop(1, '#e0b030');
+      ctx.beginPath();
+      ctx.arc(0, 0, pr, 0, Math.PI * 2);
+      ctx.fillStyle = pg;
+      ctx.fill();
+
+      ctx.fillStyle = '#ffd54a';
+      for (let i = 0; i < 14; i++) {
+        const a  = (i / 14) * Math.PI * 2;
+        const sr = s * 0.19 * t0;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * sr, Math.sin(a) * sr, s * 0.022 * t0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ── LILY (big): 6 pointed speckled petals with long stamens ─────
+  function drawLily(f, age, startMs) {
+    const s = f.size;
+    const c = f.color;
+
+    // outer 3 petals open first, inner 3 (offset 60°) follow
+    const order = [0, 2, 4, 1, 3, 5];
+
+    for (let o = 0; o < 6; o++) {
+      const k = order[o];
+      const t = petalOpenT(age, startMs, f, o);
+      if (t <= 0) continue;
+
+      const outer = (k % 2 === 0);
+      const h = s * (outer ? 1.05 : 0.98) * t;
+      const w = s * (outer ? 0.30 : 0.34) * t;
+
+      ctx.save();
+      ctx.rotate(k * (Math.PI / 3));
+
+      const grad = ctx.createLinearGradient(0, 0, 0, -h);
+      grad.addColorStop(0,    darken(c, 0.28));
+      grad.addColorStop(0.30, c);
+      grad.addColorStop(0.85, lighten(c, 0.35));
+      grad.addColorStop(1,    lighten(c, 0.55));
+
+      // Pointed petal with a slightly recurved tip
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-w * 0.9, -h * 0.20, -w * 1.05, -h * 0.65, -w * 0.12, -h * 0.97);
+      ctx.quadraticCurveTo(0, -h * 1.04, w * 0.12, -h * 0.97);
+      ctx.bezierCurveTo( w * 1.05, -h * 0.65,  w * 0.9, -h * 0.20, 0, 0);
+      ctx.fillStyle = grad;
+      ctx.globalAlpha *= 0.95;
+      ctx.fill();
+
+      // Midrib
+      ctx.beginPath();
+      ctx.moveTo(0, -h * 0.05);
+      ctx.lineTo(0, -h * 0.80);
+      ctx.strokeStyle = darken(c, 0.25);
+      ctx.lineWidth   = Math.max(0.6, s * 0.010);
+      ctx.globalAlpha *= 0.35;
+      ctx.stroke();
+
+      // Speckles near the throat (fixed pattern → no per-frame randomness)
+      ctx.fillStyle   = darken(c, 0.45);
+      ctx.globalAlpha = Math.min(f._alpha, 1) * 0.5;
+      for (let j = 0; j < 5; j++) {
+        const sx = (j % 2 ? 1 : -1) * w * (0.12 + 0.05 * (j % 3));
+        const sy = -h * (0.14 + 0.10 * j);
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(0.7, s * 0.014), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // Long stamens with rust-colored anthers
+    const t0 = petalOpenT(age, startMs, f, 5);
+    if (t0 > 0.5) {
+      for (let k = 0; k < 6; k++) {
+        const a   = k * (Math.PI / 3) + Math.PI / 6;
+        const len = s * 0.5 * t0;
+        const ex  = Math.cos(a) * len;
+        const ey  = Math.sin(a) * len;
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ex, ey);
+        ctx.strokeStyle = '#e8e0a0';
+        ctx.lineWidth   = Math.max(0.8, s * 0.012);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(a);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.045 * t0, s * 0.022 * t0, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#b5512a';
+        ctx.fill();
+        ctx.restore();
       }
     }
   }
