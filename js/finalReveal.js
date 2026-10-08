@@ -675,7 +675,7 @@ const FinalRevealScene = (() => {
         flex-shrink:0;
       `;
 
-      // Move replay into btn-row
+      // Move replay into btn-row (first = left)
       const row = document.getElementById('btn-row');
       if (row && replayBtn.parentElement !== row) {
         row.insertBefore(replayBtn, row.firstChild);
@@ -687,12 +687,31 @@ const FinalRevealScene = (() => {
         { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.2 }
       );
 
-      // Also move click-me btn into btn-row (right after replay)
+      // Move click-me btn into btn-row (after replay = right side)
       const clickBtn = document.getElementById('click-me-btn');
-      if (clickBtn && row && clickBtn.parentElement !== row) {
+      if (clickBtn && row) {
+        // Always ensure it's last (right of replay)
         row.appendChild(clickBtn);
       }
       if (clickBtn) {
+        // Inject heartbeat keyframes once
+        if (!document.getElementById('hb-style')) {
+          const hbStyle = document.createElement('style');
+          hbStyle.id = 'hb-style';
+          hbStyle.textContent = `
+            @keyframes clickme-beat {
+              0%   { transform: scale(1); }
+              14%  { transform: scale(1.22); }
+              28%  { transform: scale(1); }
+              42%  { transform: scale(1.16); }
+              70%  { transform: scale(1); }
+              100% { transform: scale(1); }
+            }
+            #click-me-btn { animation: clickme-beat 2.2s ease-in-out infinite; }
+            #click-me-btn:hover { animation: none; transform: scale(1.08) !important; }
+          `;
+          document.head.appendChild(hbStyle);
+        }
         gsap.fromTo(clickBtn,
           { opacity: 0, scale: 0.72 },
           { opacity: 1, scale: 1, duration: 0.65, ease: 'back.out(2.2)', delay: 1.6,
@@ -928,6 +947,24 @@ const BouquetPopup = (() => {
 
   let particles = [];
   let W = 0, H = 0, dpr = 1;
+  let openCount = 0;  // tracks how many times popup has been opened
+
+  const CAPTIONS = [
+    '💕 for you, always 💕',
+    '🌸 wishing you all the happiness 🌸',
+    '✨ you deserve every beautiful thing ✨',
+    '🎀 happy birthday, my favorite person 🎀',
+    '🌷 sending you all my love today 🌷',
+  ];
+
+  // 5 bouquet color palettes that cycle per open
+  const VARIANTS = [
+    { peonyMid:'#f4a0c8', peonyLight:'#fac8dd', peonyDeep:'#e87aaa', peonyPale:'#fde0ec', peonyDark:'#d45090', wrapOuter:'#f8d8e8', wrapMid:'#fce8f2', bowPink:'#f090b8' },
+    { peonyMid:'#e88ab0', peonyLight:'#f5b8cf', peonyDeep:'#c8607a', peonyPale:'#fad4e4', peonyDark:'#a84060', wrapOuter:'#f0c8d8', wrapMid:'#f8dce8', bowPink:'#d87098' },
+    { peonyMid:'#c890c8', peonyLight:'#e0b8e0', peonyDeep:'#a860a8', peonyPale:'#f0d8f0', peonyDark:'#885088', wrapOuter:'#e8d0ec', wrapMid:'#f4e0f4', bowPink:'#b878b8' },
+    { peonyMid:'#f0a890', peonyLight:'#f8c8b8', peonyDeep:'#d87860', peonyPale:'#fde8e0', peonyDark:'#b85840', wrapOuter:'#f8ddd4', wrapMid:'#fceee8', bowPink:'#e08878' },
+    { peonyMid:'#f4b8a0', peonyLight:'#fad0bc', peonyDeep:'#e89070', peonyPale:'#feeee4', peonyDark:'#c87050', wrapOuter:'#fae0d0', wrapMid:'#fdeee4', bowPink:'#e8a080' },
+  ];
 
   const C = {
     // Peony tones
@@ -1085,6 +1122,17 @@ const BouquetPopup = (() => {
     canvas.style.height = cardH + 'px';
     ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Apply rotating color variant
+    const variant = VARIANTS[openCount % VARIANTS.length];
+    Object.assign(C, variant);
+    openCount++;
+
+    // Randomize caption
+    const caption = document.querySelector('#bouquet-card p');
+    if (caption) {
+      caption.textContent = CAPTIONS[Math.floor(Math.random() * CAPTIONS.length)];
+    }
 
     phase      = 1;
     bloomT     = 0;
