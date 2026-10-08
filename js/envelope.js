@@ -96,6 +96,9 @@ const EnvelopeScene = (() => {
     // Unlock audio context on first user gesture
     unlockAudio();
 
+    // Play envelope opening sound
+    playEnvelopeSound();
+
     // Kill the float so it doesn't fight GSAP
     gsap.killTweensOf(envelopeWrap);
 
@@ -204,6 +207,87 @@ const EnvelopeScene = (() => {
       console.log('Audio context unlocked.');
     } catch (err) {
       console.warn('Audio unlock failed (non-fatal):', err);
+    }
+  }
+
+  // ── Envelope opening sound ────────────────────────────────────
+  // Paper rustle → seal crack pop → flap whoosh → soft letter slide
+  function playEnvelopeSound() {
+    try {
+      const Ctx = window._audioContext;
+      if (!Ctx) return;
+      if (Ctx.state === 'suspended') Ctx.resume();
+
+      const master = Ctx.createGain();
+      master.gain.value = 0.50;
+      master.connect(Ctx.destination);
+
+      const now = Ctx.currentTime;
+
+      // ── 1. Paper rustle — bandpass noise, short & papery ──────
+      const rustleDur = 0.35;
+      const rBuf  = Ctx.createBuffer(1, Ctx.sampleRate * rustleDur, Ctx.sampleRate);
+      const rData = rBuf.getChannelData(0);
+      for (let i = 0; i < rData.length; i++) rData[i] = Math.random() * 2 - 1;
+      const rSrc = Ctx.createBufferSource();
+      const rBp  = Ctx.createBiquadFilter();
+      const rEnv = Ctx.createGain();
+      rSrc.buffer = rBuf;
+      rBp.type = 'bandpass'; rBp.frequency.value = 4200; rBp.Q.value = 0.8;
+      rEnv.gain.setValueAtTime(0, now);
+      rEnv.gain.linearRampToValueAtTime(0.70, now + 0.05);
+      rEnv.gain.linearRampToValueAtTime(0.30, now + 0.20);
+      rEnv.gain.linearRampToValueAtTime(0, now + rustleDur);
+      rSrc.connect(rBp); rBp.connect(rEnv); rEnv.connect(master);
+      rSrc.start(now); rSrc.stop(now + rustleDur + 0.05);
+
+      // ── 2. Wax seal crack — short pitched pop ─────────────────
+      const pop = Ctx.createOscillator();
+      const popEnv = Ctx.createGain();
+      pop.type = 'sine';
+      pop.frequency.setValueAtTime(320, now + 0.42);
+      pop.frequency.exponentialRampToValueAtTime(80, now + 0.52);
+      popEnv.gain.setValueAtTime(0.65, now + 0.42);
+      popEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      pop.connect(popEnv); popEnv.connect(master);
+      pop.start(now + 0.42); pop.stop(now + 0.56);
+
+      // ── 3. Flap whoosh — filtered noise sweep ─────────────────
+      const wDur = 0.55;
+      const wBuf  = Ctx.createBuffer(1, Ctx.sampleRate * wDur, Ctx.sampleRate);
+      const wData = wBuf.getChannelData(0);
+      for (let i = 0; i < wData.length; i++) wData[i] = Math.random() * 2 - 1;
+      const wSrc = Ctx.createBufferSource();
+      const wLp  = Ctx.createBiquadFilter();
+      const wEnv = Ctx.createGain();
+      wSrc.buffer = wBuf;
+      wLp.type = 'lowpass';
+      wLp.frequency.setValueAtTime(2200, now + 0.56);
+      wLp.frequency.exponentialRampToValueAtTime(400, now + 0.56 + wDur);
+      wEnv.gain.setValueAtTime(0, now + 0.56);
+      wEnv.gain.linearRampToValueAtTime(0.55, now + 0.62);
+      wEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.56 + wDur);
+      wSrc.connect(wLp); wLp.connect(wEnv); wEnv.connect(master);
+      wSrc.start(now + 0.56); wSrc.stop(now + 0.56 + wDur + 0.05);
+
+      // ── 4. Letter slide — soft paper whisper ──────────────────
+      const sDur = 0.30;
+      const sBuf  = Ctx.createBuffer(1, Ctx.sampleRate * sDur, Ctx.sampleRate);
+      const sData = sBuf.getChannelData(0);
+      for (let i = 0; i < sData.length; i++) sData[i] = Math.random() * 2 - 1;
+      const sSrc = Ctx.createBufferSource();
+      const sBp  = Ctx.createBiquadFilter();
+      const sEnv = Ctx.createGain();
+      sSrc.buffer = sBuf;
+      sBp.type = 'bandpass'; sBp.frequency.value = 2800; sBp.Q.value = 1.2;
+      sEnv.gain.setValueAtTime(0, now + 1.1);
+      sEnv.gain.linearRampToValueAtTime(0.28, now + 1.18);
+      sEnv.gain.exponentialRampToValueAtTime(0.001, now + 1.1 + sDur);
+      sSrc.connect(sBp); sBp.connect(sEnv); sEnv.connect(master);
+      sSrc.start(now + 1.1); sSrc.stop(now + 1.1 + sDur + 0.05);
+
+    } catch(e) {
+      console.warn('Envelope sound unavailable:', e.message);
     }
   }
 
