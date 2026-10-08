@@ -643,12 +643,8 @@ const FinalRevealScene = (() => {
         ease: 'power2.out',
       }, '-=0.1')
 
-      // 3. Divider line
-      .fromTo(divider, { opacity: 0, scaleX: 0 }, {
-        opacity: 1, scaleX: 1,
-        duration: 0.55,
-        ease: 'power1.out',
-      }, '-=0.1')
+      // 3. Divider line (hidden — skip animation, keep timeline intact)
+      .set(divider, { opacity: 0, display: 'none' }, '-=0.1')
 
       // 4. Personal message lines
       .fromTo(lines, { opacity: 0, y: 6 }, {
@@ -951,7 +947,7 @@ const BouquetPopup = (() => {
         row.id = 'btn-row';
         row.style.cssText = `
           display:flex; align-items:center; justify-content:center; gap:18px;
-          width:100%; padding:24px 0 36px;
+          width:100%; padding:20px 0 20px; background:transparent;
           pointer-events:none; z-index:60;
         `;
       }
