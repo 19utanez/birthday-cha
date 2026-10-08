@@ -110,14 +110,14 @@ const FinalRevealScene = (() => {
     const frameBottom = frameEl.getBoundingClientRect().bottom + 10; // + outline
     const msgTop      = msgEl.getBoundingClientRect().top;
     const slotTop     = frameBottom;
-    const slotBottom  = Math.max(msgTop, slotTop + H * 0.06);
+    const slotBottom  = msgTop > slotTop + 10 ? msgTop : slotTop + H * 0.18;
     const slotH       = slotBottom - slotTop;
 
     // Un-scaled bouquet spans roughly 0.18*H vertically around bCY0
     const BOUQUET_H = H * 0.18;
-    const k = Math.max(0.30, Math.min(0.55, (slotH * 0.75) / BOUQUET_H));
+    const k = Math.max(0.42, Math.min(0.68, (slotH * 0.88) / BOUQUET_H));
     const bCY0 = H * 0.46;                         // layout origin used below
-    const bCY  = slotTop + slotH / 2 + H * 0.01;   // where it is finally placed
+    const bCY  = slotTop + slotH * 0.48;   // where it is finally placed
 
     // Colour palette
     const PINK     = '#e8849a';
