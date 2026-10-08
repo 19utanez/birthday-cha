@@ -33,8 +33,8 @@ const CatScene = (() => {
   let screenW    = 0;
   let screenH    = 0;
 
-  // Bob rhythm — faster walk cadence
-  const BEAT_SEC = 0.32;
+  // Bob rhythm — must match BEAT in lyrics.js (0.46s = ~130 BPM)
+  const BEAT_SEC = 0.46;
   const BOB_RATE = (Math.PI * 2) / BEAT_SEC;  // rad/s
 
   let walkPhase     = 0;
@@ -79,7 +79,7 @@ const CatScene = (() => {
     line.startX    = rect.left  - catW * 0.3;
     line.endX      = rect.right - catW * 0.1;
     line.wallStart = performance.now();
-    line.durMs     = durSecs * 800;  // covers the line in 80% of holdFor — feels snappier
+    line.durMs     = durSecs * 1000; // cat walks exactly the full holdFor duration — beat-locked
     line.active    = true;
     state.targetY  = rect.top - catH * 0.10;
     state.facing   = 1;
