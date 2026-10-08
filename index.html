@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Happy Birthday</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div id="loading-inner">
+      <div id="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Experience Wrapper -->
+  <div id="experience" class="hidden">
+
+    <!-- Canvas for flower animation (Phase 2) -->
+    <canvas id="flower-canvas"></canvas>
+
+    <!-- Blackout overlay — fades in over flowers, stays for candle scene -->
+    <div id="blackout"></div>
+
+    <!-- Canvas for candle flame (Phase 3) — above blackout -->
+    <canvas id="candle-canvas"></canvas>
+
+    <!-- Cinematic flash — persists across scene transitions -->
+    <div id="kiss-flash"></div>
+
+    <!-- Lyrics overlay — sibling of candle-canvas, always on top of it -->
+    <div id="lyrics-overlay">
+      <div id="lyric-line-0" class="lyric-line"></div>
+      <div id="lyric-line-1" class="lyric-line"></div>
+      <div id="lyric-line-2" class="lyric-line"></div>
+      <div id="lyric-line-3" class="lyric-line"></div>
+    </div>
+
+    <!-- Scene container: all scenes live here, one visible at a time -->
+    <div id="scene-container">
+
+      <!-- SCENE 0: Entry / Tap to Begin -->
+      <section id="scene-entry" class="scene active">
+        <div class="scene-content centered">
+          <p id="tap-prompt">tap anywhere to begin</p>
+        </div>
+      </section>
+
+      <!-- SCENE 1: Envelope -->
+      <section id="scene-envelope" class="scene">
+        <div class="scene-content centered">
+
+          <!-- Floating petals background (CSS only, no JS) -->
+          <div class="petal-field" aria-hidden="true">
+            <span class="petal"></span><span class="petal"></span>
+            <span class="petal"></span><span class="petal"></span>
+            <span class="petal"></span><span class="petal"></span>
+            <span class="petal"></span><span class="petal"></span>
+          </div>
+
+          <!-- Envelope assembly -->
+          <div id="envelope-wrap">
+
+            <div id="envelope">
+              <!-- Back panel (sits behind everything) -->
+              <div class="env-back"></div>
+
+              <!-- Left and right side triangles -->
+              <div class="env-side env-side--left"></div>
+              <div class="env-side env-side--right"></div>
+
+              <!-- Bottom triangle fold -->
+              <div class="env-bottom"></div>
+
+              <!-- Flap (animated open) -->
+              <div id="env-flap">
+                <div class="env-flap-inner"></div>
+                <!-- Wax seal sits on the flap -->
+                <div id="env-seal">
+                  <div class="seal-ring"></div>
+                  <div class="seal-letter">✦</div>
+                </div>
+              </div>
+
+              <!-- Letter peeking out after open -->
+              <div id="env-letter">
+                <div class="letter-lines">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prompt below the envelope -->
+            <p id="env-prompt">tap to open</p>
+
+          </div><!-- /envelope-wrap -->
+
+        </div>
+      </section>
+
+      <!-- SCENE 2: Flowers -->
+      <section id="scene-flowers" class="scene"></section>
+
+      <!-- SCENE 3: Candle + Cake + Cat -->
+      <section id="scene-candle" class="scene"></section>
+
+      <!-- SCENE 4: Final Reveal -->
+      <section id="scene-reveal" class="scene">
+        <canvas id="bouquet-canvas"></canvas>
+
+        <!-- Romantic photo frame — revealed after bouquet settles -->
+        <div id="photo-frame-wrap">
+          <div id="photo-frame">
+            <div id="photo-frame-inner">
+              <div id="photo-glow"></div>
+              <img id="girlfriend-photo"
+                   src="assets/girlfriend/girlfriend.jpg"
+                   alt="Happy Birthday"
+                   draggable="false" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Birthday message — revealed after photo frame settles -->
+        <div id="birthday-message">
+          <h1 id="msg-heading">HAPPY BIRTHDAY!</h1>
+          <p  id="msg-name"></p>
+          <div id="msg-divider"><span></span></div>
+          <div id="msg-lines"></div>
+          <!-- Replay button — shown after message finishes -->
+          <button id="replay-btn" onclick="location.reload()" aria-label="Play again">
+            <!-- Refresh-heart icon: circular arrow with a heart in the arc -->
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Circular refresh arrow -->
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+              <polyline points="20 3 20 8 15 8" />
+              <!-- Small heart at center -->
+              <path d="M12 14.5s-3-2.1-3-4a1.5 1.5 0 0 1 3 0 1.5 1.5 0 0 1 3 0c0 1.9-3 4-3 4z"
+                    stroke="none" fill="#fff" opacity="0.92"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Future scenes — Phase 10 content injected into scene-reveal -->
+
+    </div>
+  </div>
+
+  <!-- GSAP from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <!-- Config must load first -->
+  <script src="js/config.js"></script>
+
+  <!-- Scene modules (order matters) -->
+  <script src="js/scenes.js"></script>
+  <script src="js/envelope.js"></script>
+  <script src="js/flowers.js"></script>
+  <script src="js/candle.js"></script>
+  <script src="js/cake.js"></script>
+  <script src="js/cat.js"></script>
+  <script src="js/lyrics.js"></script>
+  <script src="js/finalReveal.js"></script>
+
+  <!-- Main controller loads last -->
+  <script src="script.js"></script>
+
+</body>
+</html>
