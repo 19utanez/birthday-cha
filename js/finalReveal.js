@@ -1186,529 +1186,680 @@ const BouquetPopup = (() => {
   // ── Master bouquet draw ──────────────────────────────────────────
   function drawBouquet(t) {
     const cx = W * 0.50;
-    const cy = H * 0.42;
-
-    // Draw order: wrap (back) → greenery → flowers (front)
-    drawHandle(cx, cy, t);
-    drawLeaves(cx, cy, t);
+    const cy = H * 0.40;
+    drawWrap(cx, cy, t);
+    drawGreenery(cx, cy, t);
     drawFlowers(cx, cy, t);
+    drawBow(cx, cy + H * 0.055, W * 0.078, easeOut(Math.min(t / 0.3, 1)));
   }
 
-  // ── Korean bouquet wrap: cone/fan of pink paper + white tissue + bow ──
-  function drawHandle(cx, cy, t) {
-    const eased = easeOut(t);
+  // ── Wrapping paper: layered Korean cone with texture + shadow ────
+  function drawWrap(cx, cy, t) {
+    const eased = easeOut(Math.min(t / 0.25, 1));
     if (eased <= 0) return;
 
-    // Geometry: cone wide at flowerBase, narrows to stemPoint
-    const flowerBase = cy + H * 0.05;   // top of wrap (just below flowers)
-    const stemPoint  = H * 0.96;         // bottom tip of cone
-    const coneHalfW  = W * 0.38;         // half-width at flowerBase
-    const stemHalfW  = W * 0.028;        // half-width at stem tip
+    const base    = cy + H * 0.06;
+    const tip     = H  * 0.97;
+    const wideH   = W  * 0.40;
+    const thinH   = W  * 0.024;
 
     ctx.save();
     ctx.globalAlpha = eased;
 
-    // ── Outer pink paper — left panel ──
-    const leftGrad = ctx.createLinearGradient(cx - coneHalfW, 0, cx, 0);
-    leftGrad.addColorStop(0,   C.wrapFold);
-    leftGrad.addColorStop(0.4, C.wrapOuter);
-    leftGrad.addColorStop(1,   C.wrapMid);
+    // Drop shadow behind wrap
+    ctx.shadowColor   = 'rgba(180,60,100,0.18)';
+    ctx.shadowBlur    = 18;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 8;
+
+    // ── Far-left paper panel (peeking out, darker) ──
+    const farLeftG = ctx.createLinearGradient(cx - wideH * 1.18, 0, cx - wideH * 0.5, 0);
+    farLeftG.addColorStop(0, darken(C.wrapOuter, 0.14));
+    farLeftG.addColorStop(1, C.wrapOuter);
     ctx.beginPath();
-    ctx.moveTo(cx - coneHalfW, flowerBase);
-    ctx.lineTo(cx - stemHalfW, stemPoint);
-    ctx.lineTo(cx + stemHalfW, stemPoint);
-    ctx.lineTo(cx, flowerBase);
+    ctx.moveTo(cx - wideH * 1.18, base);
+    ctx.lineTo(cx - thinH * 1.3, tip);
+    ctx.lineTo(cx - wideH * 0.5, base);
     ctx.closePath();
-    ctx.fillStyle = leftGrad;
+    ctx.fillStyle = farLeftG;
     ctx.fill();
 
-    // ── Outer pink paper — right panel ──
-    const rightGrad = ctx.createLinearGradient(cx, 0, cx + coneHalfW, 0);
-    rightGrad.addColorStop(0,   C.wrapMid);
-    rightGrad.addColorStop(0.6, C.wrapOuter);
-    rightGrad.addColorStop(1,   C.wrapFold);
+    // ── Far-right paper panel ──
+    const farRightG = ctx.createLinearGradient(cx + wideH * 0.5, 0, cx + wideH * 1.18, 0);
+    farRightG.addColorStop(0, C.wrapOuter);
+    farRightG.addColorStop(1, darken(C.wrapOuter, 0.14));
     ctx.beginPath();
-    ctx.moveTo(cx, flowerBase);
-    ctx.lineTo(cx + stemHalfW, stemPoint);
-    ctx.lineTo(cx - stemHalfW, stemPoint);   // same tip
-    ctx.lineTo(cx + coneHalfW, flowerBase);
+    ctx.moveTo(cx + wideH * 0.5, base);
+    ctx.lineTo(cx + thinH * 1.3, tip);
+    ctx.lineTo(cx + wideH * 1.18, base);
     ctx.closePath();
-    ctx.fillStyle = rightGrad;
+    ctx.fillStyle = farRightG;
     ctx.fill();
 
-    // ── White tissue inner — narrower cone inside ──
-    const tissueHalfW = coneHalfW * 0.62;
-    const tissueGrad = ctx.createLinearGradient(cx - tissueHalfW, 0, cx + tissueHalfW, 0);
-    tissueGrad.addColorStop(0,   '#f8e8f0');
-    tissueGrad.addColorStop(0.5, C.wrapTissue);
-    tissueGrad.addColorStop(1,   '#f8e8f0');
+    ctx.shadowColor = 'transparent';
+
+    // ── Main left panel ──
+    const leftG = ctx.createLinearGradient(cx - wideH, base, cx, base);
+    leftG.addColorStop(0,   darken(C.wrapOuter, 0.10));
+    leftG.addColorStop(0.3, C.wrapOuter);
+    leftG.addColorStop(0.8, C.wrapMid);
+    leftG.addColorStop(1,   lighten(C.wrapMid, 0.08));
     ctx.beginPath();
-    ctx.moveTo(cx - tissueHalfW, flowerBase);
-    ctx.lineTo(cx - stemHalfW * 0.7, stemPoint);
-    ctx.lineTo(cx + stemHalfW * 0.7, stemPoint);
-    ctx.lineTo(cx + tissueHalfW, flowerBase);
+    ctx.moveTo(cx - wideH, base);
+    ctx.lineTo(cx - thinH, tip);
+    ctx.lineTo(cx + thinH, tip);
+    ctx.lineTo(cx, base);
     ctx.closePath();
-    ctx.fillStyle = tissueGrad;
+    ctx.fillStyle = leftG;
     ctx.fill();
 
-    // ── Visible fold lines on the outer paper (left side) ──
-    ctx.strokeStyle = C.wrapFold;
-    ctx.lineWidth = 1.2;
-    ctx.globalAlpha = eased * 0.55;
-    for (let i = 1; i <= 4; i++) {
-      const frac = i / 5;
-      const fx1 = cx - coneHalfW * (1 - frac * 0.4);
-      const fx2 = cx - tissueHalfW * (1 - frac * 0.1);
-      const fy  = flowerBase + (stemPoint - flowerBase) * frac * 0.7;
+    // ── Main right panel ──
+    const rightG = ctx.createLinearGradient(cx, base, cx + wideH, base);
+    rightG.addColorStop(0,   lighten(C.wrapMid, 0.08));
+    rightG.addColorStop(0.2, C.wrapMid);
+    rightG.addColorStop(0.7, C.wrapOuter);
+    rightG.addColorStop(1,   darken(C.wrapOuter, 0.10));
+    ctx.beginPath();
+    ctx.moveTo(cx, base);
+    ctx.lineTo(cx - thinH, tip);
+    ctx.lineTo(cx + thinH, tip);
+    ctx.lineTo(cx + wideH, base);
+    ctx.closePath();
+    ctx.fillStyle = rightG;
+    ctx.fill();
+
+    // ── White tissue inner ──
+    const tissW = wideH * 0.60;
+    const tissG = ctx.createLinearGradient(cx - tissW, 0, cx + tissW, 0);
+    tissG.addColorStop(0,   '#f0e0ea');
+    tissG.addColorStop(0.2, C.wrapTissue);
+    tissG.addColorStop(0.5, '#ffffff');
+    tissG.addColorStop(0.8, C.wrapTissue);
+    tissG.addColorStop(1,   '#f0e0ea');
+    ctx.beginPath();
+    ctx.moveTo(cx - tissW, base);
+    ctx.lineTo(cx - thinH * 0.6, tip);
+    ctx.lineTo(cx + thinH * 0.6, tip);
+    ctx.lineTo(cx + tissW, base);
+    ctx.closePath();
+    ctx.fillStyle = tissG;
+    ctx.fill();
+
+    // ── Fold crease lines — left panel ──
+    ctx.globalAlpha = eased * 0.28;
+    for (let i = 1; i <= 5; i++) {
+      const fr = i / 6;
+      const x1 = cx - wideH * (1 - fr * 0.55);
+      const x2 = cx - tissW * (1 - fr * 0.08);
+      const y  = base + (tip - base) * fr * 0.72;
       ctx.beginPath();
-      ctx.moveTo(fx1, flowerBase + (fy - flowerBase) * 0.3);
-      ctx.lineTo(fx2, fy);
+      ctx.moveTo(x1, base + (y - base) * 0.25);
+      ctx.lineTo(x2, y);
+      ctx.strokeStyle = darken(C.wrapOuter, 0.22);
+      ctx.lineWidth = 1.0;
       ctx.stroke();
     }
-    // Right side folds
-    for (let i = 1; i <= 4; i++) {
-      const frac = i / 5;
-      const fx1 = cx + coneHalfW * (1 - frac * 0.4);
-      const fx2 = cx + tissueHalfW * (1 - frac * 0.1);
-      const fy  = flowerBase + (stemPoint - flowerBase) * frac * 0.7;
+    // right panel
+    for (let i = 1; i <= 5; i++) {
+      const fr = i / 6;
+      const x1 = cx + wideH * (1 - fr * 0.55);
+      const x2 = cx + tissW * (1 - fr * 0.08);
+      const y  = base + (tip - base) * fr * 0.72;
       ctx.beginPath();
-      ctx.moveTo(fx1, flowerBase + (fy - flowerBase) * 0.3);
-      ctx.lineTo(fx2, fy);
+      ctx.moveTo(x1, base + (y - base) * 0.25);
+      ctx.lineTo(x2, y);
+      ctx.strokeStyle = darken(C.wrapOuter, 0.22);
+      ctx.lineWidth = 1.0;
       ctx.stroke();
     }
 
-    // ── Tissue top edge — wavy folded edge visible above flowers ──
-    ctx.globalAlpha = eased * 0.7;
-    ctx.strokeStyle = C.wrapOuter;
-    ctx.lineWidth = 2.5;
+    // ── Scalloped tissue top edge ──
+    ctx.globalAlpha = eased * 0.65;
+    ctx.strokeStyle = C.wrapMid;
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx - tissueHalfW, flowerBase);
-    for (let x = cx - tissueHalfW; x <= cx + tissueHalfW; x += 12) {
-      const wave = Math.sin((x - cx) * 0.08) * 5;
-      ctx.lineTo(x, flowerBase + wave);
+    ctx.moveTo(cx - tissW, base);
+    const steps = 14;
+    for (let i = 0; i <= steps; i++) {
+      const x = (cx - tissW) + (tissW * 2) * (i / steps);
+      const wave = Math.sin(i * 1.1) * 5.5;
+      if (i === 0) ctx.moveTo(x, base + wave);
+      else ctx.lineTo(x, base + wave);
     }
-    ctx.lineTo(cx + tissueHalfW, flowerBase);
     ctx.stroke();
 
     ctx.restore();
-
-    // ── Pink satin bow at the top of the wrap ──
-    const bowY = flowerBase + H * 0.01;
-    drawBow(cx, bowY, W * 0.072, eased);
   }
 
-  // ── Pink satin bow ───────────────────────────────────────────────
+  // ── Satin bow: two loops + knot + ribbon tails ───────────────────
   function drawBow(cx, cy, r, alpha) {
+    if (alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    const drawLoop = (flip) => {
-      ctx.save();
-      if (flip) { ctx.translate(cx * 2, 0); ctx.scale(-1, 1); }
+    // Ribbon tails first (behind loops)
+    const tails = [[0.28, 0.85, 0.50, 1.15], [-0.28, 0.85, -0.52, 1.12]];
+    tails.forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + r * 0.18);
+      ctx.quadraticCurveTo(cx + r*x1, cy + r*y1, cx + r*x2, cy + r*y2);
+      ctx.lineWidth   = r * 0.30;
+      ctx.strokeStyle = C.bowPink;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+      ctx.lineWidth   = r * 0.10;
+      ctx.strokeStyle = C.bowLight;
+      ctx.globalAlpha = alpha * 0.50;
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+    });
 
+    // Loop helper
+    const drawLoop = (side) => {
+      const s = side;  // 1 = left, -1 = right
+      ctx.save();
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.bezierCurveTo(cx - r*0.3, cy - r*0.6,  cx - r*1.8, cy - r*0.9,  cx - r*1.6, cy + r*0.1);
-      ctx.bezierCurveTo(cx - r*1.4, cy + r*0.6,  cx - r*0.5, cy + r*0.4,  cx, cy);
-
-      const g = ctx.createRadialGradient(cx - r*0.8, cy - r*0.3, 0, cx - r*0.8, cy - r*0.3, r*1.2);
+      ctx.bezierCurveTo(
+        cx + s*r*0.28, cy - r*0.55,
+        cx + s*r*1.90, cy - r*0.95,
+        cx + s*r*1.65, cy + r*0.08
+      );
+      ctx.bezierCurveTo(
+        cx + s*r*1.42, cy + r*0.65,
+        cx + s*r*0.48, cy + r*0.42,
+        cx, cy
+      );
+      const g = ctx.createRadialGradient(
+        cx + s*r*0.85, cy - r*0.28, 0,
+        cx + s*r*0.85, cy - r*0.28, r*1.3
+      );
       g.addColorStop(0,   C.bowLight);
-      g.addColorStop(0.5, C.bowPink);
+      g.addColorStop(0.4, C.bowPink);
       g.addColorStop(1,   C.bowDark);
       ctx.fillStyle = g;
       ctx.fill();
-
-      // Sheen highlight
+      // Satin sheen
       ctx.beginPath();
-      ctx.moveTo(cx - r*0.2, cy - r*0.08);
-      ctx.bezierCurveTo(cx - r*0.7, cy - r*0.6, cx - r*1.4, cy - r*0.7, cx - r*1.5, cy + 0);
-      ctx.strokeStyle = C.bowLight;
-      ctx.lineWidth   = r * 0.13;
-      ctx.globalAlpha = alpha * 0.45;
+      ctx.moveTo(cx + s*r*0.18, cy - r*0.08);
+      ctx.bezierCurveTo(
+        cx + s*r*0.65, cy - r*0.55,
+        cx + s*r*1.45, cy - r*0.72,
+        cx + s*r*1.55, cy + r*0.02
+      );
+      ctx.strokeStyle = 'rgba(255,255,255,0.50)';
+      ctx.lineWidth   = r * 0.14;
       ctx.lineCap     = 'round';
       ctx.stroke();
-
       ctx.restore();
     };
 
-    drawLoop(false);
-    drawLoop(true);
+    drawLoop(-1);  // left loop
+    drawLoop(1);   // right loop
 
     // Center knot
-    ctx.globalAlpha = alpha;
-    const kg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r*0.35);
-    kg.addColorStop(0,   C.bowLight);
-    kg.addColorStop(0.5, C.bowPink);
+    const kg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.38);
+    kg.addColorStop(0,   '#ffffff');
+    kg.addColorStop(0.3, C.bowLight);
+    kg.addColorStop(0.7, C.bowPink);
     kg.addColorStop(1,   C.bowDark);
     ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.28, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, r*0.32, r*0.26, 0, 0, Math.PI*2);
     ctx.fillStyle = kg;
     ctx.fill();
-
-    // Tails
-    [[ 0.30, 0.90,  0.55, 1.10],
-     [-0.30, 0.90, -0.55, 1.10]].forEach(([x1, y1, x2, y2]) => {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.quadraticCurveTo(cx + r*x1, cy + r*y1, cx + r*x2, cy + r*y2);
-      ctx.lineWidth   = r * 0.26;
-      ctx.strokeStyle = C.bowPink;
-      ctx.globalAlpha = alpha * 0.9;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-      ctx.lineWidth   = r * 0.09;
-      ctx.strokeStyle = C.bowLight;
-      ctx.globalAlpha = alpha * 0.45;
-      ctx.stroke();
-    });
 
     ctx.restore();
   }
 
-  // ── Greenery: eucalyptus sprigs + ruscus around flowers ─────────
-  function drawLeaves(cx, cy, t) {
+  // ── Greenery: eucalyptus + fern fronds + ruscus ─────────────────
+  function drawGreenery(cx, cy, t) {
     const s = Math.min(W, H);
 
-    // Eucalyptus sprigs: arching stems rising from flower cluster
-    const eucaSprigs = [
-      { dx: -W*0.28, dy:  H*0.05,  angle: -1.05, len: s*0.22, delay: 0.00 },
-      { dx:  W*0.26, dy:  H*0.03,  angle:  1.10, len: s*0.20, delay: 0.02 },
-      { dx: -W*0.38, dy: -H*0.02,  angle: -1.30, len: s*0.18, delay: 0.04 },
-      { dx:  W*0.35, dy: -H*0.04,  angle:  1.28, len: s*0.17, delay: 0.04 },
-      { dx: -W*0.10, dy: -H*0.12,  angle: -0.72, len: s*0.16, delay: 0.06 },
-      { dx:  W*0.12, dy: -H*0.14,  angle:  0.68, len: s*0.15, delay: 0.06 },
+    // Eucalyptus sprigs — tall arching behind flowers
+    const eucas = [
+      { dx:-W*0.26, dy: H*0.04, angle:-1.08, len:s*0.25, delay:0.00 },
+      { dx: W*0.24, dy: H*0.02, angle: 1.12, len:s*0.23, delay:0.02 },
+      { dx:-W*0.38, dy:-H*0.01, angle:-1.32, len:s*0.20, delay:0.03 },
+      { dx: W*0.36, dy:-H*0.03, angle: 1.30, len:s*0.19, delay:0.03 },
+      { dx:-W*0.08, dy:-H*0.10, angle:-0.68, len:s*0.18, delay:0.05 },
+      { dx: W*0.10, dy:-H*0.12, angle: 0.72, len:s*0.17, delay:0.05 },
     ];
-
-    eucaSprigs.forEach((sp, i) => {
-      const lt = clamp((t - sp.delay) / 0.55, 0, 1);
+    eucas.forEach(sp => {
+      const lt = clamp((t - sp.delay) / 0.50, 0, 1);
       if (lt <= 0) return;
       ctx.save();
-      ctx.globalAlpha = easeOut(lt);
-      drawEucalyptus(cx + sp.dx, cy + sp.dy, sp.angle, sp.len * lt);
+      ctx.globalAlpha = easeOut(lt) * 0.95;
+      drawEucalyptus(cx + sp.dx, cy + sp.dy, sp.angle, sp.len * easeOut(lt));
       ctx.restore();
     });
 
-    // Small ruscus accent leaves peeking between flowers
-    const ruscusLeaves = [
-      { dx: -W*0.18, dy:  H*0.02,  angle: -0.50, len: s*0.09, delay: 0.10 },
-      { dx:  W*0.19, dy:  H*0.01,  angle:  0.55, len: s*0.09, delay: 0.10 },
-      { dx: -W*0.05, dy:  H*0.08,  angle: -0.20, len: s*0.08, delay: 0.12 },
-      { dx:  W*0.08, dy:  H*0.07,  angle:  0.30, len: s*0.08, delay: 0.12 },
+    // Fern fronds — feathery accent
+    const ferns = [
+      { dx:-W*0.32, dy: H*0.01, angle:-0.88, len:s*0.14, delay:0.06 },
+      { dx: W*0.30, dy: H*0.00, angle: 0.90, len:s*0.13, delay:0.07 },
+      { dx:-W*0.44, dy: H*0.06, angle:-1.18, len:s*0.12, delay:0.08 },
+      { dx: W*0.42, dy: H*0.05, angle: 1.20, len:s*0.11, delay:0.08 },
     ];
-
-    ruscusLeaves.forEach(l => {
-      const lt = clamp((t - l.delay) / 0.50, 0, 1);
+    ferns.forEach(f => {
+      const lt = clamp((t - f.delay) / 0.45, 0, 1);
       if (lt <= 0) return;
       ctx.save();
-      ctx.globalAlpha = easeOut(lt) * 0.85;
+      ctx.globalAlpha = easeOut(lt) * 0.80;
+      drawFern(cx + f.dx, cy + f.dy, f.angle, f.len * easeOut(lt));
+      ctx.restore();
+    });
+
+    // Ruscus accent leaves peeking between flowers
+    const ruscus = [
+      { dx:-W*0.16, dy: H*0.03, angle:-0.48, len:s*0.10, delay:0.10 },
+      { dx: W*0.17, dy: H*0.02, angle: 0.52, len:s*0.10, delay:0.10 },
+      { dx:-W*0.04, dy: H*0.09, angle:-0.18, len:s*0.09, delay:0.12 },
+      { dx: W*0.06, dy: H*0.08, angle: 0.28, len:s*0.09, delay:0.12 },
+      { dx:-W*0.24, dy:-H*0.02, angle:-0.62, len:s*0.08, delay:0.13 },
+      { dx: W*0.22, dy:-H*0.04, angle: 0.66, len:s*0.08, delay:0.13 },
+    ];
+    ruscus.forEach(l => {
+      const lt = clamp((t - l.delay) / 0.45, 0, 1);
+      if (lt <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = easeOut(lt) * 0.88;
       ctx.translate(cx + l.dx, cy + l.dy);
       ctx.rotate(l.angle);
-      ctx.scale(lt, lt);
-      drawLeaf(l.len, l.len * 0.30, C.eucaMid);
+      ctx.scale(easeOut(lt), easeOut(lt));
+      drawLeaf(l.len, l.len * 0.32, C.eucaMid);
       ctx.restore();
     });
   }
 
-  // ── Eucalyptus sprig: arching stem with paired oval leaves ───────
+  // ── Eucalyptus sprig ─────────────────────────────────────────────
   function drawEucalyptus(x, y, angle, len) {
-    const leafCount = 5;
-    const leafW = len * 0.16;
-    const leafH = len * 0.10;
-    const stemCol = C.eucaDark;
-
-    // Draw arching stem
+    const count = 6;
+    const lW = len * 0.14, lH = len * 0.09;
     const endX = x + Math.sin(angle) * len;
     const endY = y - Math.cos(Math.abs(angle)) * len;
-    const cpX  = x + Math.sin(angle) * len * 0.5 + Math.cos(angle) * len * 0.18;
-    const cpY  = y - Math.cos(Math.abs(angle)) * len * 0.5;
+    const cpX  = x + Math.sin(angle)*len*0.5 + Math.cos(angle)*len*0.2;
+    const cpY  = y - Math.cos(Math.abs(angle))*len*0.5;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.quadraticCurveTo(cpX, cpY, endX, endY);
-    ctx.strokeStyle = stemCol;
-    ctx.lineWidth   = 1.5;
+    ctx.strokeStyle = C.eucaDark;
+    ctx.lineWidth   = 1.4;
     ctx.lineCap     = 'round';
     ctx.stroke();
 
-    // Place leaves along the stem
-    for (let i = 1; i <= leafCount; i++) {
-      const frac = i / (leafCount + 1);
-      // Interpolate along quadratic bezier
-      const bx = (1-frac)*(1-frac)*x + 2*(1-frac)*frac*cpX + frac*frac*endX;
-      const by = (1-frac)*(1-frac)*y + 2*(1-frac)*frac*cpY + frac*frac*endY;
-      // stem tangent angle
-      const stemAngle = Math.atan2(endY - y, endX - x);
-      const leafCol = i < 3 ? C.eucaDark : (i < 5 ? C.eucaMid : C.eucaLight);
-      const scale   = 0.7 + frac * 0.5;
+    for (let i = 1; i <= count; i++) {
+      const fr = i / (count + 1);
+      const bx = (1-fr)*(1-fr)*x + 2*(1-fr)*fr*cpX + fr*fr*endX;
+      const by = (1-fr)*(1-fr)*y + 2*(1-fr)*fr*cpY + fr*fr*endY;
+      const ta = Math.atan2(endY - y, endX - x);
+      const sc = 0.65 + fr * 0.55;
+      const col = fr < 0.4 ? C.eucaDark : fr < 0.75 ? C.eucaMid : C.eucaLight;
 
-      // Left leaf
-      ctx.save();
-      ctx.translate(bx, by);
-      ctx.rotate(stemAngle - Math.PI * 0.5 + 0.3);
-      ctx.beginPath();
-      ctx.ellipse(leafW * scale, 0, leafW * scale, leafH * scale, 0, 0, Math.PI * 2);
-      ctx.fillStyle = leafCol;
-      ctx.fill();
-      ctx.restore();
-
-      // Right leaf (mirrored)
-      ctx.save();
-      ctx.translate(bx, by);
-      ctx.rotate(stemAngle + Math.PI * 0.5 - 0.3);
-      ctx.beginPath();
-      ctx.ellipse(-leafW * scale, 0, leafW * scale, leafH * scale, 0, 0, Math.PI * 2);
-      ctx.fillStyle = leafCol;
-      ctx.fill();
-      ctx.restore();
+      [-1, 1].forEach(side => {
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(ta + side * (Math.PI*0.5 - 0.28));
+        ctx.beginPath();
+        ctx.ellipse(lW*sc*side, 0, lW*sc, lH*sc, 0, 0, Math.PI*2);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, lW*sc);
+        g.addColorStop(0, lighten(col, 0.18));
+        g.addColorStop(1, col);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.restore();
+      });
     }
   }
 
-  // ── Single oval leaf (ruscus style) ──────────────────────────────
+  // ── Fern frond: pinnate feathery leaves ──────────────────────────
+  function drawFern(x, y, angle, len) {
+    const endX = x + Math.sin(angle) * len;
+    const endY = y - Math.cos(Math.abs(angle)) * len;
+    const cpX  = x + Math.sin(angle)*len*0.45;
+    const cpY  = y - Math.cos(Math.abs(angle))*len*0.45;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+    ctx.strokeStyle = C.eucaDark;
+    ctx.lineWidth   = 1.0;
+    ctx.stroke();
+
+    const count = 7;
+    for (let i = 1; i <= count; i++) {
+      const fr = i / (count + 1);
+      const bx = (1-fr)*(1-fr)*x + 2*(1-fr)*fr*cpX + fr*fr*endX;
+      const by = (1-fr)*(1-fr)*y + 2*(1-fr)*fr*cpY + fr*fr*endY;
+      const ta = Math.atan2(endY - y, endX - x);
+      const pLen = len * (0.18 + (1 - fr) * 0.14);
+
+      [-1, 1].forEach(side => {
+        const pa = ta + side * 0.72;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(pa)*pLen, by + Math.sin(pa)*pLen);
+        ctx.strokeStyle = C.eucaMid;
+        ctx.lineWidth   = 0.85;
+        ctx.stroke();
+      });
+    }
+  }
+
+  // ── Single pointed leaf (ruscus) ─────────────────────────────────
   function drawLeaf(len, w, col) {
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(-w, -len*0.35, -w*0.6, -len*0.75, 0, -len);
-    ctx.bezierCurveTo( w*0.6, -len*0.75,  w, -len*0.35, 0, 0);
+    ctx.bezierCurveTo(-w, -len*0.32, -w*0.55, -len*0.72, 0, -len);
+    ctx.bezierCurveTo( w*0.55, -len*0.72,  w, -len*0.32, 0, 0);
     ctx.closePath();
     const g = ctx.createLinearGradient(0, 0, 0, -len);
-    g.addColorStop(0,   lighten(col, 0.15));
+    g.addColorStop(0,   lighten(col, 0.18));
     g.addColorStop(0.5, col);
-    g.addColorStop(1,   darken(col, 0.12));
+    g.addColorStop(1,   darken(col, 0.15));
     ctx.fillStyle = g;
     ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, -len*0.82);
-    ctx.strokeStyle = darken(col, 0.20);
-    ctx.lineWidth   = w * 0.18;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -len * 0.85);
+    ctx.strokeStyle = darken(col, 0.22);
+    ctx.lineWidth   = w * 0.16;
     ctx.lineCap     = 'round';
     ctx.stroke();
   }
 
-  // ── Flower arrangement: large peonies + baby's breath ────────────
+  // ── Flower arrangement ────────────────────────────────────────────
   function drawFlowers(cx, cy, t) {
     const s = Math.min(W, H);
 
-    // Main peonies — 4 large ones + 2 medium side ones
-    const peonies = [
-      // Back row (drawn first)
-      { dx: -W*0.17, dy: -H*0.04, sz: s*0.155, rot: -0.18, delay: 0.00, col: C.peonyLight },
-      { dx:  W*0.16, dy: -H*0.06, sz: s*0.148, rot:  0.22, delay: 0.02, col: C.peonyMid   },
+    // Layout: 3-2-2 pyramid with mixed types
+    const flowers = [
+      // Back row
+      { dx:-W*0.175, dy:-H*0.045, sz:s*0.148, rot:-0.20, delay:0.00, type:'peony',      col:C.peonyLight },
+      { dx: W*0.160, dy:-H*0.065, sz:s*0.142, rot: 0.24, delay:0.02, type:'rose',       col:C.peonyMid   },
+      { dx: W*0.005, dy:-H*0.095, sz:s*0.130, rot:-0.06, delay:0.04, type:'ranunculus', col:C.peonyPale  },
+      // Mid row
+      { dx:-W*0.300, dy: H*0.018, sz:s*0.118, rot:-0.38, delay:0.08, type:'rose',       col:C.peonyDeep  },
+      { dx: W*0.295, dy: H*0.005, sz:s*0.112, rot: 0.42, delay:0.08, type:'peony',      col:C.peonyLight },
       // Front centre
-      { dx:  0,      dy:  H*0.03, sz: s*0.170, rot:  0.05, delay: 0.06, col: C.peonyMid   },
-      // Side accent
-      { dx: -W*0.30, dy:  H*0.02, sz: s*0.120, rot: -0.35, delay: 0.10, col: C.peonyLight },
-      { dx:  W*0.30, dy:  H*0.00, sz: s*0.115, rot:  0.40, delay: 0.10, col: C.peonyDeep  },
-      // Small peony bud bottom
-      { dx: -W*0.08, dy:  H*0.09, sz: s*0.090, rot: -0.12, delay: 0.14, col: C.peonyPale  },
-      { dx:  W*0.10, dy:  H*0.08, sz: s*0.085, rot:  0.28, delay: 0.14, col: C.peonyMid   },
+      { dx: 0,       dy: H*0.035, sz:s*0.168, rot: 0.06, delay:0.12, type:'peony',      col:C.peonyMid   },
+      // Bud accents low
+      { dx:-W*0.090, dy: H*0.095, sz:s*0.082, rot:-0.14, delay:0.16, type:'bud',        col:C.peonyPale  },
+      { dx: W*0.105, dy: H*0.085, sz:s*0.078, rot: 0.30, delay:0.17, type:'bud',        col:C.peonyDeep  },
+      // Small spray blossoms
+      { dx:-W*0.200, dy:-H*0.030, sz:s*0.058, rot: 0.18, delay:0.20, type:'blossom',    col:C.peonyLight },
+      { dx: W*0.215, dy:-H*0.025, sz:s*0.054, rot:-0.22, delay:0.21, type:'blossom',    col:C.peonyMid   },
     ];
 
-    // Baby's breath clusters — scattered throughout
-    const babysBreath = [
-      { dx: -W*0.38, dy: -H*0.08, spread: s*0.06, delay: 0.20 },
-      { dx:  W*0.38, dy: -H*0.06, spread: s*0.06, delay: 0.20 },
-      { dx: -W*0.22, dy: -H*0.12, spread: s*0.05, delay: 0.22 },
-      { dx:  W*0.24, dy: -H*0.10, spread: s*0.05, delay: 0.22 },
-      { dx: -W*0.40, dy:  H*0.04, spread: s*0.05, delay: 0.24 },
-      { dx:  W*0.42, dy:  H*0.02, spread: s*0.05, delay: 0.24 },
-      { dx: -W*0.12, dy: -H*0.14, spread: s*0.04, delay: 0.26 },
-      { dx:  W*0.14, dy: -H*0.13, spread: s*0.04, delay: 0.26 },
-      { dx:  W*0.00, dy: -H*0.16, spread: s*0.04, delay: 0.26 },
-      { dx: -W*0.28, dy:  H*0.08, spread: s*0.04, delay: 0.28 },
-      { dx:  W*0.26, dy:  H*0.10, spread: s*0.04, delay: 0.28 },
+    // Baby's breath clusters
+    const bb = [
+      { dx:-W*0.38, dy:-H*0.075, sp:s*0.065, delay:0.22 },
+      { dx: W*0.37, dy:-H*0.055, sp:s*0.065, delay:0.22 },
+      { dx:-W*0.22, dy:-H*0.115, sp:s*0.055, delay:0.24 },
+      { dx: W*0.23, dy:-H*0.105, sp:s*0.055, delay:0.24 },
+      { dx: 0,      dy:-H*0.155, sp:s*0.048, delay:0.25 },
+      { dx:-W*0.42, dy: H*0.050, sp:s*0.050, delay:0.26 },
+      { dx: W*0.41, dy: H*0.035, sp:s*0.050, delay:0.26 },
+      { dx:-W*0.12, dy:-H*0.135, sp:s*0.042, delay:0.27 },
+      { dx: W*0.13, dy:-H*0.125, sp:s*0.042, delay:0.27 },
+      { dx:-W*0.28, dy: H*0.075, sp:s*0.038, delay:0.28 },
+      { dx: W*0.27, dy: H*0.080, sp:s*0.038, delay:0.28 },
     ];
 
-    // Draw back peonies first (indices 0,1)
-    [0, 1, 3, 4].forEach(i => {
-      const f = peonies[i];
-      const ft = clamp((t - f.delay) / 0.52, 0, 1);
-      if (ft <= 0) return;
-      const pop = ft < 0.85 ? ft : 0.85 + Math.sin((ft - 0.85) / 0.15 * Math.PI) * 0.08;
-      ctx.save();
-      ctx.globalAlpha = easeOut(ft);
-      ctx.translate(cx + f.dx, cy + f.dy);
-      ctx.rotate(f.rot);
-      ctx.scale(pop, pop);
-      drawPeony(f.col, f.sz);
-      ctx.restore();
-    });
+    // Back + mid flowers
+    [0,1,2,3,4].forEach(i => _drawFlower(flowers[i], cx, cy, t));
 
-    // Baby's breath (behind front flowers)
-    babysBreath.forEach(bb => {
-      const bt = clamp((t - bb.delay) / 0.40, 0, 1);
+    // Baby's breath
+    bb.forEach(b => {
+      const bt = clamp((t - b.delay) / 0.38, 0, 1);
       if (bt <= 0) return;
       ctx.save();
-      ctx.globalAlpha = easeOut(bt) * 0.92;
-      drawBabysBreath(cx + bb.dx, cy + bb.dy, bb.spread);
+      ctx.globalAlpha = easeOut(bt) * 0.95;
+      drawBabysBreath(cx + b.dx, cy + b.dy, b.sp);
       ctx.restore();
     });
 
-    // Front peonies (indices 2, 5, 6 — drawn on top)
-    [2, 5, 6].forEach(i => {
-      const f = peonies[i];
-      const ft = clamp((t - f.delay) / 0.52, 0, 1);
-      if (ft <= 0) return;
-      const pop = ft < 0.85 ? ft : 0.85 + Math.sin((ft - 0.85) / 0.15 * Math.PI) * 0.08;
-      ctx.save();
-      ctx.globalAlpha = easeOut(ft);
-      ctx.translate(cx + f.dx, cy + f.dy);
-      ctx.rotate(f.rot);
-      ctx.scale(pop, pop);
-      drawPeony(f.col, f.sz);
-      ctx.restore();
-    });
+    // Front flowers on top
+    [5,6,7,8,9].forEach(i => _drawFlower(flowers[i], cx, cy, t));
   }
 
-  // ── Realistic peony: many layered curved petals, light center ────
+  function _drawFlower(f, cx, cy, t) {
+    const ft = clamp((t - f.delay) / 0.50, 0, 1);
+    if (ft <= 0) return;
+    const pop = easeOut(ft) * (ft < 0.80 ? 1 : 1 + Math.sin((ft-0.80)/0.20*Math.PI)*0.06);
+    ctx.save();
+    ctx.globalAlpha = easeOut(ft);
+    ctx.translate(cx + f.dx, cy + f.dy);
+    ctx.rotate(f.rot);
+    ctx.scale(pop, pop);
+    if      (f.type === 'peony')      drawPeony(f.col, f.sz);
+    else if (f.type === 'rose')       drawRose(f.col, f.sz);
+    else if (f.type === 'ranunculus') drawRanunculus(f.col, f.sz);
+    else if (f.type === 'bud')        drawBud(f.col, f.sz);
+    else if (f.type === 'blossom')    drawBlossom(f.col, f.sz);
+    ctx.restore();
+  }
+
+  // ── Peony: 4 concentric petal rings + stamen ─────────────────────
   function drawPeony(col, s) {
-    const innerCol  = lighten(col, 0.28);
-    const outerCol  = darken(col, 0.08);
-    const centerCol = darken(col, 0.15);
-
-    // Outer petals — 5 wide spread petals (back layer)
+    // Ring 1 — 5 wide outer petals
     for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2 + 0.1;
-      ctx.save();
-      ctx.rotate(a);
+      const a = (i/5)*Math.PI*2 + 0.12;
+      ctx.save(); ctx.rotate(a);
       ctx.beginPath();
-      ctx.moveTo(0, -s*0.06);
-      ctx.bezierCurveTo(-s*0.42, -s*0.22,  -s*0.52,  s*0.52, 0, s*0.78);
-      ctx.bezierCurveTo( s*0.52,  s*0.52,   s*0.42, -s*0.22, 0, -s*0.06);
-      const g = ctx.createLinearGradient(0, -s*0.1, 0, s*0.8);
-      g.addColorStop(0,   lighten(col, 0.15));
-      g.addColorStop(0.5, outerCol);
-      g.addColorStop(1,   darken(col, 0.18));
-      ctx.fillStyle = g;
-      ctx.fill();
+      ctx.moveTo(0, -s*0.07);
+      ctx.bezierCurveTo(-s*0.44, -s*0.24, -s*0.54, s*0.54, 0, s*0.82);
+      ctx.bezierCurveTo( s*0.54,  s*0.54,  s*0.44,-s*0.24, 0,-s*0.07);
+      const g = ctx.createLinearGradient(0,-s*0.12,0,s*0.82);
+      g.addColorStop(0, lighten(col,0.20)); g.addColorStop(0.55, col); g.addColorStop(1, darken(col,0.22));
+      ctx.fillStyle=g; ctx.fill();
+      // petal vein
+      ctx.beginPath(); ctx.moveTo(0,-s*0.04); ctx.quadraticCurveTo(s*0.04,s*0.35,0,s*0.78);
+      ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=s*0.028; ctx.stroke();
       ctx.restore();
     }
-
-    // Second petal ring — 7 petals, slightly smaller
+    // Ring 2 — 7 petals
     for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2 - 0.22;
-      ctx.save();
-      ctx.rotate(a);
+      const a = (i/7)*Math.PI*2 - 0.24;
+      ctx.save(); ctx.rotate(a);
       ctx.beginPath();
-      ctx.moveTo(0, -s*0.04);
-      ctx.bezierCurveTo(-s*0.32, -s*0.16,  -s*0.40,  s*0.38, 0, s*0.60);
-      ctx.bezierCurveTo( s*0.40,  s*0.38,   s*0.32, -s*0.16, 0, -s*0.04);
-      const g = ctx.createLinearGradient(0, -s*0.04, 0, s*0.6);
-      g.addColorStop(0,   lighten(col, 0.20));
-      g.addColorStop(1,   col);
-      ctx.fillStyle = g;
-      ctx.fill();
-      ctx.restore();
+      ctx.moveTo(0,-s*0.05);
+      ctx.bezierCurveTo(-s*0.34,-s*0.18,-s*0.42, s*0.40, 0, s*0.62);
+      ctx.bezierCurveTo( s*0.42, s*0.40,  s*0.34,-s*0.18, 0,-s*0.05);
+      const g = ctx.createLinearGradient(0,-s*0.05,0,s*0.62);
+      g.addColorStop(0, lighten(col,0.26)); g.addColorStop(1, lighten(col,0.06));
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
     }
-
-    // Third ring — 8 upright inner petals
+    // Ring 3 — 8 inner petals
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + 0.38;
-      ctx.save();
-      ctx.rotate(a);
+      const a = (i/8)*Math.PI*2 + 0.40;
+      ctx.save(); ctx.rotate(a);
       ctx.beginPath();
-      ctx.moveTo(0, -s*0.02);
-      ctx.bezierCurveTo(-s*0.20, -s*0.10,  -s*0.25,  s*0.22, 0, s*0.38);
-      ctx.bezierCurveTo( s*0.25,  s*0.22,   s*0.20, -s*0.10, 0, -s*0.02);
-      ctx.fillStyle = innerCol;
-      ctx.fill();
-      ctx.restore();
+      ctx.moveTo(0,-s*0.03);
+      ctx.bezierCurveTo(-s*0.22,-s*0.12,-s*0.27,s*0.24, 0,s*0.40);
+      ctx.bezierCurveTo( s*0.27, s*0.24,  s*0.22,-s*0.12,0,-s*0.03);
+      ctx.fillStyle = lighten(col,0.32); ctx.fill(); ctx.restore();
     }
-
-    // Fourth ring — 9 very tight inner petals, nearly upright
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2 - 0.10;
-      ctx.save();
-      ctx.rotate(a);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(-s*0.11, -s*0.06,  -s*0.13, s*0.12, 0, s*0.21);
-      ctx.bezierCurveTo( s*0.13,  s*0.12,   s*0.11, -s*0.06, 0, 0);
-      ctx.fillStyle = lighten(col, 0.35);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Center — small golden stamens glow
-    const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, s*0.14);
-    cg.addColorStop(0,   '#fff5cc');
-    cg.addColorStop(0.5, '#ffe090');
-    cg.addColorStop(1,   lighten(col, 0.30));
-    ctx.beginPath();
-    ctx.arc(0, 0, s * 0.13, 0, Math.PI * 2);
-    ctx.fillStyle = cg;
-    ctx.fill();
-
-    // Tiny stamen dots
+    // Ring 4 — 10 tiny cupped petals
     for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      const r = s * 0.07;
+      const a = (i/10)*Math.PI*2 - 0.08;
+      ctx.save(); ctx.rotate(a);
       ctx.beginPath();
-      ctx.arc(Math.cos(a)*r, Math.sin(a)*r, s * 0.018, 0, Math.PI * 2);
-      ctx.fillStyle = '#e8c050';
-      ctx.fill();
+      ctx.moveTo(0,0);
+      ctx.bezierCurveTo(-s*0.10,-s*0.05,-s*0.12,s*0.10, 0,s*0.20);
+      ctx.bezierCurveTo( s*0.12, s*0.10,  s*0.10,-s*0.05,0, 0);
+      ctx.fillStyle = lighten(col,0.48); ctx.fill(); ctx.restore();
+    }
+    // Stamen center
+    const cg = ctx.createRadialGradient(0,0,0,0,0,s*0.16);
+    cg.addColorStop(0,'#fffbe8'); cg.addColorStop(0.5,'#ffe898'); cg.addColorStop(1,lighten(col,0.35));
+    ctx.beginPath(); ctx.arc(0,0,s*0.15,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+    for (let i = 0; i < 12; i++) {
+      const a=(i/12)*Math.PI*2; const r=s*0.082;
+      ctx.beginPath(); ctx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.016,0,Math.PI*2);
+      ctx.fillStyle='#d4a030'; ctx.fill();
     }
   }
 
-  // ── Baby's breath: branching clusters of tiny white dots ─────────
+  // ── Rose: tight spiral of cupped petals ──────────────────────────
+  function drawRose(col, s) {
+    // Outer guard petals — 5 large cupped
+    for (let i = 0; i < 5; i++) {
+      const a = (i/5)*Math.PI*2 + 0.20;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.08);
+      ctx.bezierCurveTo(-s*0.38,-s*0.30,-s*0.50, s*0.38, 0, s*0.68);
+      ctx.bezierCurveTo( s*0.50, s*0.38,  s*0.38,-s*0.30, 0,-s*0.08);
+      const g=ctx.createLinearGradient(0,-s*0.12,0,s*0.70);
+      g.addColorStop(0,lighten(col,0.18)); g.addColorStop(0.6,col); g.addColorStop(1,darken(col,0.25));
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    // Mid spiral — 6 petals, slightly inward, rotated 36°
+    for (let i = 0; i < 6; i++) {
+      const a = (i/6)*Math.PI*2 + 0.52;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.06);
+      ctx.bezierCurveTo(-s*0.28,-s*0.22,-s*0.36,s*0.28,0,s*0.50);
+      ctx.bezierCurveTo( s*0.36, s*0.28,  s*0.28,-s*0.22,0,-s*0.06);
+      const g=ctx.createLinearGradient(0,-s*0.06,0,s*0.50);
+      g.addColorStop(0,lighten(col,0.28)); g.addColorStop(1,col);
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    // Inner rolled petals — 8 tight
+    for (let i = 0; i < 8; i++) {
+      const a = (i/8)*Math.PI*2 - 0.15;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.04);
+      ctx.bezierCurveTo(-s*0.18,-s*0.14,-s*0.22,s*0.18,0,s*0.32);
+      ctx.bezierCurveTo( s*0.22, s*0.18,  s*0.18,-s*0.14,0,-s*0.04);
+      ctx.fillStyle=lighten(col,0.42); ctx.fill(); ctx.restore();
+    }
+    // Tight center bud
+    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.14);
+    cg.addColorStop(0,'#fff8f8'); cg.addColorStop(0.6,lighten(col,0.55)); cg.addColorStop(1,lighten(col,0.30));
+    ctx.beginPath(); ctx.arc(0,0,s*0.13,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+  }
+
+  // ── Ranunculus: many flat layered petals like a paper flower ─────
+  function drawRanunculus(col, s) {
+    const rings = [
+      { count:8, scale:0.88, offset:0.08, lightness:0.05 },
+      { count:9, scale:0.70, offset:0.22, lightness:0.15 },
+      { count:10,scale:0.54, offset:0.35, lightness:0.28 },
+      { count:11,scale:0.38, offset:0.48, lightness:0.42 },
+    ];
+    rings.forEach(r => {
+      for (let i=0; i<r.count; i++) {
+        const a=(i/r.count)*Math.PI*2+r.offset;
+        ctx.save(); ctx.rotate(a);
+        ctx.beginPath();
+        ctx.moveTo(0,-s*0.04);
+        ctx.bezierCurveTo(-s*0.26*r.scale,-s*0.18*r.scale,-s*0.30*r.scale,s*0.30*r.scale,0,s*0.52*r.scale);
+        ctx.bezierCurveTo( s*0.30*r.scale, s*0.30*r.scale,  s*0.26*r.scale,-s*0.18*r.scale,0,-s*0.04);
+        ctx.fillStyle=lighten(col,r.lightness); ctx.fill(); ctx.restore();
+      }
+    });
+    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.10);
+    cg.addColorStop(0,'#fff9e8'); cg.addColorStop(1,'#ffe090');
+    ctx.beginPath(); ctx.arc(0,0,s*0.09,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+  }
+
+  // ── Peony bud: closed teardrop petals ────────────────────────────
+  function drawBud(col, s) {
+    // Sepals
+    for (let i=0; i<5; i++) {
+      const a=(i/5)*Math.PI*2+0.30;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.bezierCurveTo(-s*0.10,-s*0.20,-s*0.08,-s*0.55,0,-s*0.72);
+      ctx.bezierCurveTo( s*0.08,-s*0.55,  s*0.10,-s*0.20,0,0);
+      ctx.fillStyle=darken(C.eucaMid,0.08); ctx.fill(); ctx.restore();
+    }
+    // Outer petals — cupped tightly around center
+    for (let i=0; i<6; i++) {
+      const a=(i/6)*Math.PI*2+0.15;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(0,-s*0.06);
+      ctx.bezierCurveTo(-s*0.22,-s*0.28,-s*0.22,s*0.08,0,s*0.38);
+      ctx.bezierCurveTo( s*0.22, s*0.08,  s*0.22,-s*0.28,0,-s*0.06);
+      const g=ctx.createLinearGradient(0,-s*0.10,0,s*0.38);
+      g.addColorStop(0,lighten(col,0.22)); g.addColorStop(1,darken(col,0.10));
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    // Tight inner petals
+    for (let i=0; i<8; i++) {
+      const a=(i/8)*Math.PI*2-0.22;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(0,-s*0.03);
+      ctx.bezierCurveTo(-s*0.12,-s*0.16,-s*0.14,s*0.04,0,s*0.20);
+      ctx.bezierCurveTo( s*0.14, s*0.04,  s*0.12,-s*0.16,0,-s*0.03);
+      ctx.fillStyle=lighten(col,0.40); ctx.fill(); ctx.restore();
+    }
+  }
+
+  // ── Spray blossom: 5-petal simple flower ─────────────────────────
+  function drawBlossom(col, s) {
+    for (let i=0; i<5; i++) {
+      const a=(i/5)*Math.PI*2 - Math.PI*0.5;
+      const px=Math.cos(a)*s*0.35, py=Math.sin(a)*s*0.35;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(a + Math.PI*0.5);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s*0.25, s*0.36, 0, 0, Math.PI*2);
+      const g=ctx.createRadialGradient(0,-s*0.12,0,0,-s*0.12,s*0.36);
+      g.addColorStop(0,lighten(col,0.35)); g.addColorStop(1,col);
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.13);
+    cg.addColorStop(0,'#fff8c0'); cg.addColorStop(1,'#f0c840');
+    ctx.beginPath(); ctx.arc(0,0,s*0.12,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+  }
+
+  // ── Baby's breath: delicate branching clusters ───────────────────
   function drawBabysBreath(cx, cy, spread) {
     if (spread <= 0) return;
-    const branchCount = 6;
-    // Fixed offsets per branch (no random — called every frame)
-    const lenFracs = [0.7, 0.9, 0.6, 0.85, 0.75, 0.65];
-    for (let b = 0; b < branchCount; b++) {
-      const baseAngle = (b / branchCount) * Math.PI * 2;
-      const blen      = spread * lenFracs[b];
-      const bx        = cx + Math.cos(baseAngle) * blen;
-      const by        = cy + Math.sin(baseAngle) * blen;
+    const branches = 7;
+    const lenFracs = [0.72, 0.95, 0.62, 0.88, 0.78, 0.68, 0.82];
+    const dotOffsets = [
+      [0, 0, 2.8], [-0.55, 0.48, 2.2], [0.52, 0.42, 2.0],
+      [-0.28, 0.88, 1.7], [0.30, 0.80, 1.6],
+    ];
+    for (let b = 0; b < branches; b++) {
+      const baseAngle = (b / branches) * Math.PI * 2 - 0.15;
+      const blen = spread * lenFracs[b];
+      const bx = cx + Math.cos(baseAngle) * blen;
+      const by = cy + Math.sin(baseAngle) * blen;
+      // Sub-branch
+      const sbx = cx + Math.cos(baseAngle)*blen*0.55;
+      const sby = cy + Math.sin(baseAngle)*blen*0.55;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by);
+      ctx.strokeStyle='rgba(110,145,90,0.30)'; ctx.lineWidth=0.7; ctx.stroke();
 
-      // Branch stem
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(bx, by);
-      ctx.strokeStyle = 'rgba(130,160,110,0.35)';
-      ctx.lineWidth   = 0.8;
-      ctx.stroke();
-
-      // Tiny flowers at branch tips — fixed offsets, no random
-      const dotOffsets = [
-        [0, 0, 2.5], [-0.5, 0.5, 2.0], [0.5, 0.4, 1.8],
-      ];
-      const dotCount = 3;
-      for (let d = 0; d < dotCount; d++) {
-        const [ox, oy, dr] = dotOffsets[d];
-        const dangle = baseAngle + ox * 0.7;
-        const dlen   = spread * (0.12 + oy * 0.06);
-        const dx     = bx + Math.cos(dangle) * dlen;
-        const dy     = by + Math.sin(dangle) * dlen;
-
-        ctx.beginPath();
-        ctx.arc(dx, dy, dr, 0, Math.PI * 2);
-        ctx.fillStyle = C.babyBreath;
-        ctx.fill();
-        // Tiny yellow center
-        ctx.beginPath();
-        ctx.arc(dx, dy, dr * 0.35, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffe8a0';
-        ctx.fill();
-      }
+      dotOffsets.forEach(([ox, oy, dr]) => {
+        const da = baseAngle + ox * 0.65;
+        const dl = spread * (0.10 + oy * 0.055);
+        const dx = bx + Math.cos(da) * dl;
+        const dy = by + Math.sin(da) * dl;
+        // White flower
+        ctx.beginPath(); ctx.arc(dx, dy, dr, 0, Math.PI*2);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        // Petal detail
+        for (let p=0; p<5; p++) {
+          const pa=(p/5)*Math.PI*2;
+          ctx.beginPath();
+          ctx.arc(dx+Math.cos(pa)*dr*0.52, dy+Math.sin(pa)*dr*0.52, dr*0.42, 0, Math.PI*2);
+          ctx.fillStyle='rgba(255,252,250,0.85)'; ctx.fill();
+        }
+        // Yellow center
+        ctx.beginPath(); ctx.arc(dx, dy, dr*0.38, 0, Math.PI*2);
+        ctx.fillStyle='#ffe870'; ctx.fill();
+      });
     }
-  }
-
-  // ── Legacy stubs (kept so switch-case in old drawFlowers won't error) ─
-  function drawRose(col, s)       { drawPeony(col, s); }
-  function drawRanunculus(col, s) { drawPeony(lighten(col, 0.08), s * 0.88); }
-  function drawTulip(col, s)      { drawPeony(darken(col, 0.05),  s * 0.82); }
-  function drawBlossom(col, s)    {
-    for (let i = 0; i < 5; i++) {
-      const a = (i/5)*Math.PI*2 - Math.PI*0.5;
-      ctx.save();
-      ctx.translate(Math.cos(a)*s*0.38, Math.sin(a)*s*0.38);
-      ctx.rotate(a + Math.PI*0.5);
-      ctx.beginPath(); ctx.ellipse(0, 0, s*0.27, s*0.37, 0, 0, Math.PI*2);
-      ctx.fillStyle = col; ctx.fill();
-      ctx.restore();
-    }
-    ctx.beginPath(); ctx.arc(0, 0, s*0.10, 0, Math.PI*2);
-    ctx.fillStyle = lighten(col, 0.25); ctx.fill();
   }
 
   // ── Sparkle particles ────────────────────────────────────────────
