@@ -1196,282 +1196,368 @@ const BouquetPopup = (() => {
 
     if (t > 0.10) drawFlowers(cx, cy, t);
 
+    const bbPop = easeOut(clamp((t - 0.35) / 0.25, 0, 1));
+    if (bbPop > 0) drawBabysBreath(cx, cy, bbPop);
+
     const bowPop = easeOut(clamp(t / 0.30, 0, 1));
-    if (bowPop > 0) drawBow(cx, cy + H * 0.18, 1, bowPop);
+    if (bowPop > 0) drawBow(cx, cy + H * 0.16, 1, bowPop);
   }
 
-  // ── Wrapping paper: wide white cone + fanned top panels + pink tissue ──
+  // ── Wrapping paper: layered Korean cone with texture + shadow ────
   function drawWrap(cx, cy, t) {
     const eased = easeOut(Math.min(t / 0.25, 1));
     if (eased <= 0) return;
 
-    const base  = cy + H * 0.08;
-    const tip   = H  * 0.95;
-    const wideH = W  * 0.42;
-    const thinH = W  * 0.022;
+    const base    = cy + H * 0.06;
+    const tip     = H  * 0.97;
+    const wideH   = W  * 0.40;
+    const thinH   = W  * 0.024;
 
     ctx.save();
     ctx.globalAlpha = eased;
 
-    // Drop shadow
-    ctx.shadowColor   = 'rgba(120,80,100,0.15)';
-    ctx.shadowBlur    = 20;
+    // Drop shadow behind wrap
+    ctx.shadowColor   = 'rgba(180,60,100,0.18)';
+    ctx.shadowBlur    = 18;
     ctx.shadowOffsetX = 4;
-    ctx.shadowOffsetY = 10;
+    ctx.shadowOffsetY = 8;
 
-    // ── Main white cone body ──
-    const coneG = ctx.createLinearGradient(cx - wideH, base, cx + wideH, base);
-    coneG.addColorStop(0,   '#d8d8d8');
-    coneG.addColorStop(0.18, '#f0f0f0');
-    coneG.addColorStop(0.5,  '#ffffff');
-    coneG.addColorStop(0.82, '#f0f0f0');
-    coneG.addColorStop(1,    '#d8d8d8');
+    // ── Far-left paper panel (peeking out, darker) ──
+    const farLeftG = ctx.createLinearGradient(cx - wideH * 1.18, 0, cx - wideH * 0.5, 0);
+    farLeftG.addColorStop(0, darken(C.wrapOuter, 0.14));
+    farLeftG.addColorStop(1, C.wrapOuter);
     ctx.beginPath();
-    ctx.moveTo(cx - wideH, base);
-    ctx.lineTo(cx - thinH, tip);
-    ctx.lineTo(cx + thinH, tip);
-    ctx.lineTo(cx + wideH, base);
+    ctx.moveTo(cx - wideH * 1.18, base);
+    ctx.lineTo(cx - thinH * 1.3, tip);
+    ctx.lineTo(cx - wideH * 0.5, base);
     ctx.closePath();
-    ctx.fillStyle = coneG;
+    ctx.fillStyle = farLeftG;
+    ctx.fill();
+
+    // ── Far-right paper panel ──
+    const farRightG = ctx.createLinearGradient(cx + wideH * 0.5, 0, cx + wideH * 1.18, 0);
+    farRightG.addColorStop(0, C.wrapOuter);
+    farRightG.addColorStop(1, darken(C.wrapOuter, 0.14));
+    ctx.beginPath();
+    ctx.moveTo(cx + wideH * 0.5, base);
+    ctx.lineTo(cx + thinH * 1.3, tip);
+    ctx.lineTo(cx + wideH * 1.18, base);
+    ctx.closePath();
+    ctx.fillStyle = farRightG;
     ctx.fill();
 
     ctx.shadowColor = 'transparent';
 
-    // ── Pink tissue inner cone ──
-    const tissW = wideH * 0.52;
+    // ── Main left panel ──
+    const leftG = ctx.createLinearGradient(cx - wideH, base, cx, base);
+    leftG.addColorStop(0,   darken(C.wrapOuter, 0.10));
+    leftG.addColorStop(0.3, C.wrapOuter);
+    leftG.addColorStop(0.8, C.wrapMid);
+    leftG.addColorStop(1,   lighten(C.wrapMid, 0.08));
+    ctx.beginPath();
+    ctx.moveTo(cx - wideH, base);
+    ctx.lineTo(cx - thinH, tip);
+    ctx.lineTo(cx + thinH, tip);
+    ctx.lineTo(cx, base);
+    ctx.closePath();
+    ctx.fillStyle = leftG;
+    ctx.fill();
+
+    // ── Main right panel ──
+    const rightG = ctx.createLinearGradient(cx, base, cx + wideH, base);
+    rightG.addColorStop(0,   lighten(C.wrapMid, 0.08));
+    rightG.addColorStop(0.2, C.wrapMid);
+    rightG.addColorStop(0.7, C.wrapOuter);
+    rightG.addColorStop(1,   darken(C.wrapOuter, 0.10));
+    ctx.beginPath();
+    ctx.moveTo(cx, base);
+    ctx.lineTo(cx - thinH, tip);
+    ctx.lineTo(cx + thinH, tip);
+    ctx.lineTo(cx + wideH, base);
+    ctx.closePath();
+    ctx.fillStyle = rightG;
+    ctx.fill();
+
+    // ── White tissue inner ──
+    const tissW = wideH * 0.60;
     const tissG = ctx.createLinearGradient(cx - tissW, 0, cx + tissW, 0);
-    tissG.addColorStop(0,   '#f0c8d8');
-    tissG.addColorStop(0.25, '#fce8f0');
-    tissG.addColorStop(0.5,  '#fef0f6');
-    tissG.addColorStop(0.75, '#fce8f0');
-    tissG.addColorStop(1,    '#f0c8d8');
+    tissG.addColorStop(0,   '#f0e0ea');
+    tissG.addColorStop(0.2, C.wrapTissue);
+    tissG.addColorStop(0.5, '#ffffff');
+    tissG.addColorStop(0.8, C.wrapTissue);
+    tissG.addColorStop(1,   '#f0e0ea');
     ctx.beginPath();
     ctx.moveTo(cx - tissW, base);
-    ctx.lineTo(cx - thinH * 0.5, tip);
-    ctx.lineTo(cx + thinH * 0.5, tip);
+    ctx.lineTo(cx - thinH * 0.6, tip);
+    ctx.lineTo(cx + thinH * 0.6, tip);
     ctx.lineTo(cx + tissW, base);
     ctx.closePath();
     ctx.fillStyle = tissG;
     ctx.fill();
 
-    // ── Vertical fold lines on cone ──
-    ctx.globalAlpha = eased * 0.22;
-    ctx.strokeStyle = '#c0c0c0';
-    ctx.lineWidth = 1.0;
-    for (let i = 1; i <= 4; i++) {
-      const fr = i / 5;
-      const x1L = cx - wideH * (1 - fr * 0.7);
-      const x2L = cx - thinH * (1 - fr * 0.3);
+    // ── Fold crease lines — left panel ──
+    ctx.globalAlpha = eased * 0.28;
+    for (let i = 1; i <= 5; i++) {
+      const fr = i / 6;
+      const x1 = cx - wideH * (1 - fr * 0.55);
+      const x2 = cx - tissW * (1 - fr * 0.08);
+      const y  = base + (tip - base) * fr * 0.72;
       ctx.beginPath();
-      ctx.moveTo(x1L, base);
-      ctx.lineTo(x2L, tip);
+      ctx.moveTo(x1, base + (y - base) * 0.25);
+      ctx.lineTo(x2, y);
+      ctx.strokeStyle = darken(C.wrapOuter, 0.22);
+      ctx.lineWidth = 1.0;
       ctx.stroke();
-      const x1R = cx + wideH * (1 - fr * 0.7);
-      const x2R = cx + thinH * (1 - fr * 0.3);
+    }
+    // right panel
+    for (let i = 1; i <= 5; i++) {
+      const fr = i / 6;
+      const x1 = cx + wideH * (1 - fr * 0.55);
+      const x2 = cx + tissW * (1 - fr * 0.08);
+      const y  = base + (tip - base) * fr * 0.72;
       ctx.beginPath();
-      ctx.moveTo(x1R, base);
-      ctx.lineTo(x2R, tip);
+      ctx.moveTo(x1, base + (y - base) * 0.25);
+      ctx.lineTo(x2, y);
+      ctx.strokeStyle = darken(C.wrapOuter, 0.22);
+      ctx.lineWidth = 1.0;
       ctx.stroke();
     }
 
-    // ── Ruffled pink tissue top edge ──
-    ctx.globalAlpha = eased * 0.80;
-    ctx.strokeStyle = '#f0a8c8';
-    ctx.lineWidth = 2.5;
+    // ── Scalloped tissue top edge ──
+    ctx.globalAlpha = eased * 0.65;
+    ctx.strokeStyle = C.wrapMid;
+    ctx.lineWidth = 2.8;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    const tSteps = 18;
-    for (let i = 0; i <= tSteps; i++) {
-      const x = (cx - tissW) + (tissW * 2) * (i / tSteps);
-      const wave = Math.sin(i * 1.4) * 6;
+    ctx.moveTo(cx - tissW, base);
+    const steps = 14;
+    for (let i = 0; i <= steps; i++) {
+      const x = (cx - tissW) + (tissW * 2) * (i / steps);
+      const wave = Math.sin(i * 1.1) * 5.5;
       if (i === 0) ctx.moveTo(x, base + wave);
       else ctx.lineTo(x, base + wave);
     }
     ctx.stroke();
 
-    // ── Fanned paper panels at top (6 panels, tapered trapezoid shape) ──
-    ctx.globalAlpha = eased;
-    const panelCount = 6;
-    const panelW = W * 0.082;
-    const panelH = H * 0.13;
-    const spreadLeft  = cx - W * 0.30;
-    const spreadRight = cx + W * 0.30;
-    for (let i = 0; i < panelCount; i++) {
-      const fr = i / (panelCount - 1);
-      const panelCx = spreadLeft + (spreadRight - spreadLeft) * fr;
-      const rotAngle = (fr - 0.5) * 0.70;
-
-      ctx.save();
-      ctx.translate(panelCx, base);
-      ctx.rotate(rotAngle);
-
-      // Trapezoid: wider at top, narrower at bottom — natural paper fan shape
-      const topW  = panelW * 0.55;
-      const botW  = panelW * 0.22;
-
-      const pg = ctx.createLinearGradient(0, -panelH, 0, 0);
-      pg.addColorStop(0,   '#ffffff');
-      pg.addColorStop(0.4, '#fdf8fc');
-      pg.addColorStop(1,   '#f8eef4');
-
-      ctx.beginPath();
-      ctx.moveTo(-botW, 0);
-      ctx.lineTo(-topW, -panelH);
-      // Slightly curved top edge
-      ctx.quadraticCurveTo(0, -panelH - panelH * 0.08, topW, -panelH);
-      ctx.lineTo(botW, 0);
-      ctx.closePath();
-      ctx.fillStyle = pg;
-      ctx.fill();
-
-      // Soft edge shadow for depth
-      ctx.strokeStyle = 'rgba(200,160,180,0.25)';
-      ctx.lineWidth = 0.7;
-      ctx.globalAlpha = eased * 0.60;
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
     ctx.restore();
   }
 
-  // ── Satin bow: two loops + knot + LONG ribbon tails hanging down ─
+  // ── Satin bow: two loops + knot + ribbon tails ───────────────────
   function drawBow(cx, cy, r, alpha) {
     if (alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    const bowR = W * 0.12;
+    // Ribbon tails first (behind loops)
+    const tails = [[0.28, 0.85, 0.50, 1.15], [-0.28, 0.85, -0.52, 1.12]];
+    tails.forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + r * 0.18);
+      ctx.quadraticCurveTo(cx + r*x1, cy + r*y1, cx + r*x2, cy + r*y2);
+      ctx.lineWidth   = r * 0.30;
+      ctx.strokeStyle = C.bowPink;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+      ctx.lineWidth   = r * 0.10;
+      ctx.strokeStyle = C.bowLight;
+      ctx.globalAlpha = alpha * 0.50;
+      ctx.stroke();
+      ctx.globalAlpha = alpha;
+    });
 
-    // ── Long ribbon tails hanging down from knot ──
-    const tailW = bowR * 0.28;
+    // Loop helper
+    const drawLoop = (side) => {
+      const s = side;  // 1 = left, -1 = right
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.bezierCurveTo(
+        cx + s*r*0.28, cy - r*0.55,
+        cx + s*r*1.90, cy - r*0.95,
+        cx + s*r*1.65, cy + r*0.08
+      );
+      ctx.bezierCurveTo(
+        cx + s*r*1.42, cy + r*0.65,
+        cx + s*r*0.48, cy + r*0.42,
+        cx, cy
+      );
+      const g = ctx.createRadialGradient(
+        cx + s*r*0.85, cy - r*0.28, 0,
+        cx + s*r*0.85, cy - r*0.28, r*1.3
+      );
+      g.addColorStop(0,   C.bowLight);
+      g.addColorStop(0.4, C.bowPink);
+      g.addColorStop(1,   C.bowDark);
+      ctx.fillStyle = g;
+      ctx.fill();
+      // Satin sheen
+      ctx.beginPath();
+      ctx.moveTo(cx + s*r*0.18, cy - r*0.08);
+      ctx.bezierCurveTo(
+        cx + s*r*0.65, cy - r*0.55,
+        cx + s*r*1.45, cy - r*0.72,
+        cx + s*r*1.55, cy + r*0.02
+      );
+      ctx.strokeStyle = 'rgba(255,255,255,0.50)';
+      ctx.lineWidth   = r * 0.14;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+      ctx.restore();
+    };
 
-    // Left tail: curves gently down and slightly left — stays near cone centerline
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.quadraticCurveTo(cx - W * 0.04, cy + H * 0.10, cx - W * 0.07, cy + H * 0.28);
-    ctx.lineWidth   = tailW;
-    ctx.strokeStyle = C.bowPink;
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.lineWidth   = tailW * 0.35;
-    ctx.strokeStyle = C.bowLight;
-    ctx.globalAlpha = alpha * 0.55;
-    ctx.stroke();
-    ctx.globalAlpha = alpha;
+    drawLoop(-1);  // left loop
+    drawLoop(1);   // right loop
 
-    // Right tail: curves gently down and slightly right
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.quadraticCurveTo(cx + W * 0.04, cy + H * 0.11, cx + W * 0.08, cy + H * 0.29);
-    ctx.lineWidth   = tailW;
-    ctx.strokeStyle = C.bowPink;
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.lineWidth   = tailW * 0.35;
-    ctx.strokeStyle = C.bowLight;
-    ctx.globalAlpha = alpha * 0.55;
-    ctx.stroke();
-    ctx.globalAlpha = alpha;
-
-    // ── Left loop ──
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.bezierCurveTo(
-      cx - bowR * 0.30, cy - bowR * 0.60,
-      cx - bowR * 2.00, cy - bowR * 0.90,
-      cx - bowR * 1.70, cy + bowR * 0.10
-    );
-    ctx.bezierCurveTo(
-      cx - bowR * 1.45, cy + bowR * 0.70,
-      cx - bowR * 0.45, cy + bowR * 0.40,
-      cx, cy
-    );
-    const lg = ctx.createRadialGradient(cx - bowR * 0.90, cy - bowR * 0.25, 0, cx - bowR * 0.90, cy - bowR * 0.25, bowR * 1.4);
-    lg.addColorStop(0,   C.bowLight);
-    lg.addColorStop(0.4, C.bowPink);
-    lg.addColorStop(1,   C.bowDark);
-    ctx.fillStyle = lg;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx - bowR * 0.22, cy - bowR * 0.10);
-    ctx.bezierCurveTo(cx - bowR * 0.68, cy - bowR * 0.58, cx - bowR * 1.48, cy - bowR * 0.70, cx - bowR * 1.58, cy + bowR * 0.04);
-    ctx.strokeStyle = 'rgba(255,255,255,0.48)';
-    ctx.lineWidth   = bowR * 0.14;
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.restore();
-
-    // ── Right loop ──
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.bezierCurveTo(
-      cx + bowR * 0.30, cy - bowR * 0.60,
-      cx + bowR * 2.00, cy - bowR * 0.90,
-      cx + bowR * 1.70, cy + bowR * 0.10
-    );
-    ctx.bezierCurveTo(
-      cx + bowR * 1.45, cy + bowR * 0.70,
-      cx + bowR * 0.45, cy + bowR * 0.40,
-      cx, cy
-    );
-    const rg = ctx.createRadialGradient(cx + bowR * 0.90, cy - bowR * 0.25, 0, cx + bowR * 0.90, cy - bowR * 0.25, bowR * 1.4);
-    rg.addColorStop(0,   C.bowLight);
-    rg.addColorStop(0.4, C.bowPink);
-    rg.addColorStop(1,   C.bowDark);
-    ctx.fillStyle = rg;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx + bowR * 0.22, cy - bowR * 0.10);
-    ctx.bezierCurveTo(cx + bowR * 0.68, cy - bowR * 0.58, cx + bowR * 1.48, cy - bowR * 0.70, cx + bowR * 1.58, cy + bowR * 0.04);
-    ctx.strokeStyle = 'rgba(255,255,255,0.48)';
-    ctx.lineWidth   = bowR * 0.14;
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-    ctx.restore();
-
-    // ── Center knot ──
-    const kg = ctx.createRadialGradient(cx, cy, 0, cx, cy, bowR * 0.40);
+    // Center knot
+    const kg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.38);
     kg.addColorStop(0,   '#ffffff');
     kg.addColorStop(0.3, C.bowLight);
     kg.addColorStop(0.7, C.bowPink);
     kg.addColorStop(1,   C.bowDark);
     ctx.beginPath();
-    ctx.ellipse(cx, cy, bowR * 0.30, bowR * 0.24, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, r*0.32, r*0.26, 0, 0, Math.PI*2);
     ctx.fillStyle = kg;
     ctx.fill();
 
     ctx.restore();
   }
 
-  // ── Greenery: simple dark green leaves at base of flower cluster ─
+  // ── Greenery: eucalyptus + fern fronds + ruscus ─────────────────
   function drawGreenery(cx, cy, t) {
     const s = Math.min(W, H);
-    const leaves = [
-      { dx:-W*0.18, dy: H*0.06, angle:-0.55, len:s*0.11, delay:0.00 },
-      { dx: W*0.16, dy: H*0.05, angle: 0.58, len:s*0.11, delay:0.02 },
-      { dx:-W*0.08, dy: H*0.08, angle:-0.22, len:s*0.09, delay:0.04 },
-      { dx: W*0.09, dy: H*0.07, angle: 0.28, len:s*0.09, delay:0.04 },
-      { dx:-W*0.26, dy: H*0.03, angle:-0.80, len:s*0.10, delay:0.06 },
-      { dx: W*0.24, dy: H*0.02, angle: 0.82, len:s*0.10, delay:0.06 },
+
+    // Eucalyptus sprigs — tall arching behind flowers
+    const eucas = [
+      { dx:-W*0.26, dy: H*0.04, angle:-1.08, len:s*0.25, delay:0.00 },
+      { dx: W*0.24, dy: H*0.02, angle: 1.12, len:s*0.23, delay:0.02 },
+      { dx:-W*0.38, dy:-H*0.01, angle:-1.32, len:s*0.20, delay:0.03 },
+      { dx: W*0.36, dy:-H*0.03, angle: 1.30, len:s*0.19, delay:0.03 },
+      { dx:-W*0.08, dy:-H*0.10, angle:-0.68, len:s*0.18, delay:0.05 },
+      { dx: W*0.10, dy:-H*0.12, angle: 0.72, len:s*0.17, delay:0.05 },
     ];
-    leaves.forEach(l => {
-      const lt = clamp((t - l.delay) / 0.40, 0, 1);
+    eucas.forEach(sp => {
+      const lt = clamp((t - sp.delay) / 0.50, 0, 1);
       if (lt <= 0) return;
       ctx.save();
-      ctx.globalAlpha = easeOut(lt) * 0.90;
+      ctx.globalAlpha = easeOut(lt) * 0.95;
+      drawEucalyptus(cx + sp.dx, cy + sp.dy, sp.angle, sp.len * easeOut(lt));
+      ctx.restore();
+    });
+
+    // Fern fronds — feathery accent
+    const ferns = [
+      { dx:-W*0.32, dy: H*0.01, angle:-0.88, len:s*0.14, delay:0.06 },
+      { dx: W*0.30, dy: H*0.00, angle: 0.90, len:s*0.13, delay:0.07 },
+      { dx:-W*0.44, dy: H*0.06, angle:-1.18, len:s*0.12, delay:0.08 },
+      { dx: W*0.42, dy: H*0.05, angle: 1.20, len:s*0.11, delay:0.08 },
+    ];
+    ferns.forEach(f => {
+      const lt = clamp((t - f.delay) / 0.45, 0, 1);
+      if (lt <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = easeOut(lt) * 0.80;
+      drawFern(cx + f.dx, cy + f.dy, f.angle, f.len * easeOut(lt));
+      ctx.restore();
+    });
+
+    // Ruscus accent leaves peeking between flowers
+    const ruscus = [
+      { dx:-W*0.16, dy: H*0.03, angle:-0.48, len:s*0.10, delay:0.10 },
+      { dx: W*0.17, dy: H*0.02, angle: 0.52, len:s*0.10, delay:0.10 },
+      { dx:-W*0.04, dy: H*0.09, angle:-0.18, len:s*0.09, delay:0.12 },
+      { dx: W*0.06, dy: H*0.08, angle: 0.28, len:s*0.09, delay:0.12 },
+      { dx:-W*0.24, dy:-H*0.02, angle:-0.62, len:s*0.08, delay:0.13 },
+      { dx: W*0.22, dy:-H*0.04, angle: 0.66, len:s*0.08, delay:0.13 },
+    ];
+    ruscus.forEach(l => {
+      const lt = clamp((t - l.delay) / 0.45, 0, 1);
+      if (lt <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = easeOut(lt) * 0.88;
       ctx.translate(cx + l.dx, cy + l.dy);
       ctx.rotate(l.angle);
       ctx.scale(easeOut(lt), easeOut(lt));
-      drawLeaf(l.len, l.len * 0.30, C.eucaDark);
+      drawLeaf(l.len, l.len * 0.32, C.eucaMid);
       ctx.restore();
     });
   }
 
-  // ── Single pointed leaf ───────────────────────────────────────────
+  // ── Eucalyptus sprig ─────────────────────────────────────────────
+  function drawEucalyptus(x, y, angle, len) {
+    const count = 6;
+    const lW = len * 0.14, lH = len * 0.09;
+    const endX = x + Math.sin(angle) * len;
+    const endY = y - Math.cos(Math.abs(angle)) * len;
+    const cpX  = x + Math.sin(angle)*len*0.5 + Math.cos(angle)*len*0.2;
+    const cpY  = y - Math.cos(Math.abs(angle))*len*0.5;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+    ctx.strokeStyle = C.eucaDark;
+    ctx.lineWidth   = 1.4;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+
+    for (let i = 1; i <= count; i++) {
+      const fr = i / (count + 1);
+      const bx = (1-fr)*(1-fr)*x + 2*(1-fr)*fr*cpX + fr*fr*endX;
+      const by = (1-fr)*(1-fr)*y + 2*(1-fr)*fr*cpY + fr*fr*endY;
+      const ta = Math.atan2(endY - y, endX - x);
+      const sc = 0.65 + fr * 0.55;
+      const col = fr < 0.4 ? C.eucaDark : fr < 0.75 ? C.eucaMid : C.eucaLight;
+
+      [-1, 1].forEach(side => {
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(ta + side * (Math.PI*0.5 - 0.28));
+        ctx.beginPath();
+        ctx.ellipse(lW*sc*side, 0, lW*sc, lH*sc, 0, 0, Math.PI*2);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, lW*sc);
+        g.addColorStop(0, lighten(col, 0.18));
+        g.addColorStop(1, col);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+  }
+
+  // ── Fern frond: pinnate feathery leaves ──────────────────────────
+  function drawFern(x, y, angle, len) {
+    const endX = x + Math.sin(angle) * len;
+    const endY = y - Math.cos(Math.abs(angle)) * len;
+    const cpX  = x + Math.sin(angle)*len*0.45;
+    const cpY  = y - Math.cos(Math.abs(angle))*len*0.45;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+    ctx.strokeStyle = C.eucaDark;
+    ctx.lineWidth   = 1.0;
+    ctx.stroke();
+
+    const count = 7;
+    for (let i = 1; i <= count; i++) {
+      const fr = i / (count + 1);
+      const bx = (1-fr)*(1-fr)*x + 2*(1-fr)*fr*cpX + fr*fr*endX;
+      const by = (1-fr)*(1-fr)*y + 2*(1-fr)*fr*cpY + fr*fr*endY;
+      const ta = Math.atan2(endY - y, endX - x);
+      const pLen = len * (0.18 + (1 - fr) * 0.14);
+
+      [-1, 1].forEach(side => {
+        const pa = ta + side * 0.72;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(pa)*pLen, by + Math.sin(pa)*pLen);
+        ctx.strokeStyle = C.eucaMid;
+        ctx.lineWidth   = 0.85;
+        ctx.stroke();
+      });
+    }
+  }
+
+  // ── Single pointed leaf (ruscus) ─────────────────────────────────
   function drawLeaf(len, w, col) {
     ctx.beginPath();
     ctx.moveTo(0, 0);
@@ -1493,62 +1579,59 @@ const BouquetPopup = (() => {
     ctx.stroke();
   }
 
-  // ── Flower arrangement matching reference image ───────────────────
+  // ── Flower arrangement ────────────────────────────────────────────
   function drawFlowers(cx, cy, t) {
     const s = Math.min(W, H);
 
+    // Layout: 3-2-2 pyramid with mixed types
     const flowers = [
-      // Left stock spike (tall white matthiola)
-      { dx:-W*0.30, dy:-H*0.10, sz:s*0.13, rot:-0.10, delay:0.00, type:'stock',         col:'#ffffff'    },
-      // Right stock spike
-      { dx: W*0.28, dy:-H*0.08, sz:s*0.13, rot: 0.12, delay:0.02, type:'stock',         col:'#ffffff'    },
-      // White ranunculus / white peony
-      { dx:-W*0.16, dy:-H*0.04, sz:s*0.13, rot:-0.18, delay:0.06, type:'ranunculus',    col:'#ffffff'    },
-      // Lisianthus buds — back center
-      { dx:-W*0.06, dy:-H*0.11, sz:s*0.08, rot:-0.12, delay:0.10, type:'bud',           col:C.peonyPale  },
-      { dx: W*0.04, dy:-H*0.13, sz:s*0.08, rot: 0.18, delay:0.11, type:'bud',           col:C.peonyLight },
-      { dx: W*0.12, dy:-H*0.10, sz:s*0.07, rot: 0.30, delay:0.12, type:'bud',           col:C.peonyPale  },
-      // Hero center peony — large soft pink
-      { dx: W*0.01, dy: H*0.01, sz:s*0.19, rot: 0.05, delay:0.14, type:'peony',         col:C.peonyMid   },
-      // Small daisy blossoms scattered
-      { dx:-W*0.22, dy:-H*0.09, sz:s*0.05, rot: 0.20, delay:0.22, type:'blossom',       col:'#ffffff'    },
-      { dx: W*0.20, dy:-H*0.07, sz:s*0.05, rot:-0.15, delay:0.23, type:'blossom',       col:'#ffffff'    },
-      { dx:-W*0.10, dy:-H*0.07, sz:s*0.04, rot: 0.10, delay:0.25, type:'blossom',       col:'#ffffff'    },
+      // Back row
+      { dx:-W*0.175, dy:-H*0.045, sz:s*0.148, rot:-0.20, delay:0.00, type:'peony',      col:C.peonyLight },
+      { dx: W*0.160, dy:-H*0.065, sz:s*0.142, rot: 0.24, delay:0.02, type:'rose',       col:C.peonyMid   },
+      { dx: W*0.005, dy:-H*0.095, sz:s*0.130, rot:-0.06, delay:0.04, type:'ranunculus', col:C.peonyPale  },
+      // Mid row
+      { dx:-W*0.300, dy: H*0.018, sz:s*0.118, rot:-0.38, delay:0.08, type:'rose',       col:C.peonyDeep  },
+      { dx: W*0.295, dy: H*0.005, sz:s*0.112, rot: 0.42, delay:0.08, type:'peony',      col:C.peonyLight },
+      // Front centre
+      { dx: 0,       dy: H*0.035, sz:s*0.168, rot: 0.06, delay:0.12, type:'peony',      col:C.peonyMid   },
+      // Bud accents low
+      { dx:-W*0.090, dy: H*0.095, sz:s*0.082, rot:-0.14, delay:0.16, type:'bud',        col:C.peonyPale  },
+      { dx: W*0.105, dy: H*0.085, sz:s*0.078, rot: 0.30, delay:0.17, type:'bud',        col:C.peonyDeep  },
+      // Small spray blossoms
+      { dx:-W*0.200, dy:-H*0.030, sz:s*0.058, rot: 0.18, delay:0.20, type:'blossom',    col:C.peonyLight },
+      { dx: W*0.215, dy:-H*0.025, sz:s*0.054, rot:-0.22, delay:0.21, type:'blossom',    col:C.peonyMid   },
     ];
 
-    // Baby's breath cloud — very dense, fills upper half
+    // Baby's breath clusters
     const bb = [
-      { dx:-W*0.35, dy:-H*0.12, sp:s*0.070, delay:0.18 },
-      { dx: W*0.33, dy:-H*0.10, sp:s*0.070, delay:0.18 },
-      { dx:-W*0.20, dy:-H*0.16, sp:s*0.065, delay:0.20 },
-      { dx: W*0.18, dy:-H*0.14, sp:s*0.065, delay:0.20 },
-      { dx: 0,      dy:-H*0.19, sp:s*0.060, delay:0.21 },
-      { dx:-W*0.10, dy:-H*0.14, sp:s*0.055, delay:0.22 },
-      { dx: W*0.10, dy:-H*0.16, sp:s*0.055, delay:0.22 },
-      { dx:-W*0.40, dy:-H*0.04, sp:s*0.055, delay:0.23 },
-      { dx: W*0.38, dy:-H*0.02, sp:s*0.055, delay:0.23 },
-      { dx:-W*0.28, dy:-H*0.08, sp:s*0.050, delay:0.24 },
-      { dx: W*0.26, dy:-H*0.06, sp:s*0.050, delay:0.24 },
-      { dx:-W*0.14, dy:-H*0.05, sp:s*0.045, delay:0.26 },
-      { dx: W*0.14, dy:-H*0.04, sp:s*0.045, delay:0.26 },
-      { dx: 0,      dy:-H*0.08, sp:s*0.042, delay:0.27 },
+      { dx:-W*0.38, dy:-H*0.075, sp:s*0.065, delay:0.22 },
+      { dx: W*0.37, dy:-H*0.055, sp:s*0.065, delay:0.22 },
+      { dx:-W*0.22, dy:-H*0.115, sp:s*0.055, delay:0.24 },
+      { dx: W*0.23, dy:-H*0.105, sp:s*0.055, delay:0.24 },
+      { dx: 0,      dy:-H*0.155, sp:s*0.048, delay:0.25 },
+      { dx:-W*0.42, dy: H*0.050, sp:s*0.050, delay:0.26 },
+      { dx: W*0.41, dy: H*0.035, sp:s*0.050, delay:0.26 },
+      { dx:-W*0.12, dy:-H*0.135, sp:s*0.042, delay:0.27 },
+      { dx: W*0.13, dy:-H*0.125, sp:s*0.042, delay:0.27 },
+      { dx:-W*0.28, dy: H*0.075, sp:s*0.038, delay:0.28 },
+      { dx: W*0.27, dy: H*0.080, sp:s*0.038, delay:0.28 },
     ];
 
-    // Back layer: stocks + white ranunculus + buds
-    [0,1,2,3,4,5].forEach(i => _drawFlower(flowers[i], cx, cy, t));
+    // Back + mid flowers
+    [0,1,2,3,4].forEach(i => _drawFlower(flowers[i], cx, cy, t));
 
-    // Baby's breath cloud
+    // Baby's breath
     bb.forEach(b => {
       const bt = clamp((t - b.delay) / 0.38, 0, 1);
       if (bt <= 0) return;
       ctx.save();
-      ctx.globalAlpha = easeOut(bt) * 0.92;
+      ctx.globalAlpha = easeOut(bt) * 0.95;
       drawBabysBreath(cx + b.dx, cy + b.dy, b.sp);
       ctx.restore();
     });
 
-    // Front: hero peony + blossoms on top
-    [6,7,8,9].forEach(i => _drawFlower(flowers[i], cx, cy, t));
+    // Front flowers on top
+    [5,6,7,8,9].forEach(i => _drawFlower(flowers[i], cx, cy, t));
   }
 
   function _drawFlower(f, cx, cy, t) {
@@ -1561,70 +1644,11 @@ const BouquetPopup = (() => {
     ctx.rotate(f.rot);
     ctx.scale(pop, pop);
     if      (f.type === 'peony')      drawPeony(f.col, f.sz);
-    else if (f.type === 'stock')      drawStockFlower(0, 0, f.sz, ft);
-    else if (f.type === 'ranunculus') drawWhiteRanunculus(f.sz);
-    else if (f.type === 'bud')        drawLisianthusBud(f.col, f.sz);
+    else if (f.type === 'rose')       drawRose(f.col, f.sz);
+    else if (f.type === 'ranunculus') drawRanunculus(f.col, f.sz);
+    else if (f.type === 'bud')        drawBud(f.col, f.sz);
     else if (f.type === 'blossom')    drawBlossom(f.col, f.sz);
     ctx.restore();
-  }
-
-  // ── Stock flower: vertical spike of small cupped white blooms ────
-  function drawStockFlower(x, y, len, t) {
-    const bloomCount = 9;
-    const stemH = len * 1.6;
-
-    // Stem
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y - stemH);
-    ctx.strokeStyle = C.eucaDark;
-    ctx.lineWidth   = len * 0.035;
-    ctx.lineCap     = 'round';
-    ctx.stroke();
-
-    // Small leaves on stem
-    const leafPositions = [0.35, 0.60, 0.80];
-    leafPositions.forEach((fr, idx) => {
-      const lx = x;
-      const ly = y - stemH * fr;
-      const side = (idx % 2 === 0) ? -1 : 1;
-      ctx.save();
-      ctx.translate(lx, ly);
-      ctx.rotate(side * 0.9);
-      drawLeaf(len * 0.28, len * 0.09, C.eucaMid);
-      ctx.restore();
-    });
-
-    // Blooms from bottom to top of spike
-    for (let i = 0; i < bloomCount; i++) {
-      const fr = i / (bloomCount - 1);
-      const bx = x + Math.sin(i * 0.8) * len * 0.12;
-      const by = y - stemH * (0.22 + fr * 0.70);
-      const br = len * (0.095 - fr * 0.028);
-      const openAmt = 1 - fr * 0.65;
-
-      // Cupped white bloom
-      for (let p = 0; p < 5; p++) {
-        const pa = (p / 5) * Math.PI * 2 + i * 0.4;
-        const px = bx + Math.cos(pa) * br * openAmt;
-        const py = by + Math.sin(pa) * br * openAmt * 0.7;
-        ctx.beginPath();
-        ctx.ellipse(px, py, br * 0.55, br * 0.70, pa, 0, Math.PI * 2);
-        ctx.fillStyle = fr > 0.7 ? '#e8f0e8' : '#ffffff';
-        ctx.fill();
-      }
-      // Center
-      ctx.beginPath();
-      ctx.arc(bx, by, br * 0.28, 0, Math.PI * 2);
-      ctx.fillStyle = fr > 0.7 ? '#c8ddc8' : '#fff8e8';
-      ctx.fill();
-      if (fr < 0.7) {
-        ctx.beginPath();
-        ctx.arc(bx, by, br * 0.14, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffe878';
-        ctx.fill();
-      }
-    }
   }
 
   // ── Peony: 4 concentric petal rings + stamen ─────────────────────
@@ -1640,6 +1664,7 @@ const BouquetPopup = (() => {
       const g = ctx.createLinearGradient(0,-s*0.12,0,s*0.82);
       g.addColorStop(0, lighten(col,0.20)); g.addColorStop(0.55, col); g.addColorStop(1, darken(col,0.22));
       ctx.fillStyle=g; ctx.fill();
+      // petal vein
       ctx.beginPath(); ctx.moveTo(0,-s*0.04); ctx.quadraticCurveTo(s*0.04,s*0.35,0,s*0.78);
       ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=s*0.028; ctx.stroke();
       ctx.restore();
@@ -1687,14 +1712,55 @@ const BouquetPopup = (() => {
     }
   }
 
-  // ── White ranunculus: layered white petals, round head ───────────
-  function drawWhiteRanunculus(s) {
-    const col = '#ffffff';
+  // ── Rose: tight spiral of cupped petals ──────────────────────────
+  function drawRose(col, s) {
+    // Outer guard petals — 5 large cupped
+    for (let i = 0; i < 5; i++) {
+      const a = (i/5)*Math.PI*2 + 0.20;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.08);
+      ctx.bezierCurveTo(-s*0.38,-s*0.30,-s*0.50, s*0.38, 0, s*0.68);
+      ctx.bezierCurveTo( s*0.50, s*0.38,  s*0.38,-s*0.30, 0,-s*0.08);
+      const g=ctx.createLinearGradient(0,-s*0.12,0,s*0.70);
+      g.addColorStop(0,lighten(col,0.18)); g.addColorStop(0.6,col); g.addColorStop(1,darken(col,0.25));
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    // Mid spiral — 6 petals, slightly inward, rotated 36°
+    for (let i = 0; i < 6; i++) {
+      const a = (i/6)*Math.PI*2 + 0.52;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.06);
+      ctx.bezierCurveTo(-s*0.28,-s*0.22,-s*0.36,s*0.28,0,s*0.50);
+      ctx.bezierCurveTo( s*0.36, s*0.28,  s*0.28,-s*0.22,0,-s*0.06);
+      const g=ctx.createLinearGradient(0,-s*0.06,0,s*0.50);
+      g.addColorStop(0,lighten(col,0.28)); g.addColorStop(1,col);
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    }
+    // Inner rolled petals — 8 tight
+    for (let i = 0; i < 8; i++) {
+      const a = (i/8)*Math.PI*2 - 0.15;
+      ctx.save(); ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0,-s*0.04);
+      ctx.bezierCurveTo(-s*0.18,-s*0.14,-s*0.22,s*0.18,0,s*0.32);
+      ctx.bezierCurveTo( s*0.22, s*0.18,  s*0.18,-s*0.14,0,-s*0.04);
+      ctx.fillStyle=lighten(col,0.42); ctx.fill(); ctx.restore();
+    }
+    // Tight center bud
+    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.14);
+    cg.addColorStop(0,'#fff8f8'); cg.addColorStop(0.6,lighten(col,0.55)); cg.addColorStop(1,lighten(col,0.30));
+    ctx.beginPath(); ctx.arc(0,0,s*0.13,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+  }
+
+  // ── Ranunculus: many flat layered petals like a paper flower ─────
+  function drawRanunculus(col, s) {
     const rings = [
-      { count:8, scale:0.88, offset:0.08 },
-      { count:9, scale:0.70, offset:0.22 },
-      { count:10,scale:0.54, offset:0.35 },
-      { count:11,scale:0.38, offset:0.48 },
+      { count:8, scale:0.88, offset:0.08, lightness:0.05 },
+      { count:9, scale:0.70, offset:0.22, lightness:0.15 },
+      { count:10,scale:0.54, offset:0.35, lightness:0.28 },
+      { count:11,scale:0.38, offset:0.48, lightness:0.42 },
     ];
     rings.forEach(r => {
       for (let i=0; i<r.count; i++) {
@@ -1704,9 +1770,7 @@ const BouquetPopup = (() => {
         ctx.moveTo(0,-s*0.04);
         ctx.bezierCurveTo(-s*0.26*r.scale,-s*0.18*r.scale,-s*0.30*r.scale,s*0.30*r.scale,0,s*0.52*r.scale);
         ctx.bezierCurveTo( s*0.30*r.scale, s*0.30*r.scale,  s*0.26*r.scale,-s*0.18*r.scale,0,-s*0.04);
-        const shadeFr = rings.indexOf(r) / rings.length;
-        ctx.fillStyle = shadeFr < 0.3 ? '#f0f0f0' : shadeFr < 0.6 ? '#f8f8f8' : '#ffffff';
-        ctx.fill(); ctx.restore();
+        ctx.fillStyle=lighten(col,r.lightness); ctx.fill(); ctx.restore();
       }
     });
     const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.10);
@@ -1714,92 +1778,96 @@ const BouquetPopup = (() => {
     ctx.beginPath(); ctx.arc(0,0,s*0.09,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
   }
 
-  // ── Lisianthus bud: teardrop shaped, green tips, slightly pink ───
-  function drawLisianthusBud(col, s) {
-    // Green sepal tips
+  // ── Peony bud: closed teardrop petals ────────────────────────────
+  function drawBud(col, s) {
+    // Sepals
     for (let i=0; i<5; i++) {
-      const a=(i/5)*Math.PI*2 + 0.20;
+      const a=(i/5)*Math.PI*2+0.30;
       ctx.save(); ctx.rotate(a);
-      ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(-s*0.08,-s*0.18,-s*0.07,-s*0.52,0,-s*0.72);
-      ctx.bezierCurveTo( s*0.07,-s*0.52,  s*0.08,-s*0.18,0, 0);
-      ctx.fillStyle = C.eucaMid; ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.bezierCurveTo(-s*0.10,-s*0.20,-s*0.08,-s*0.55,0,-s*0.72);
+      ctx.bezierCurveTo( s*0.08,-s*0.55,  s*0.10,-s*0.20,0,0);
+      ctx.fillStyle=darken(C.eucaMid,0.08); ctx.fill(); ctx.restore();
     }
-    // Teardrop petal body — slightly open at top
-    for (let i=0; i<5; i++) {
-      const a=(i/5)*Math.PI*2 + 0.10;
+    // Outer petals — cupped tightly around center
+    for (let i=0; i<6; i++) {
+      const a=(i/6)*Math.PI*2+0.15;
       ctx.save(); ctx.rotate(a);
-      ctx.beginPath(); ctx.moveTo(0,-s*0.04);
-      ctx.bezierCurveTo(-s*0.18,-s*0.22,-s*0.20, s*0.05, 0, s*0.30);
-      ctx.bezierCurveTo( s*0.20,  s*0.05,  s*0.18,-s*0.22, 0,-s*0.04);
-      const g=ctx.createLinearGradient(0,-s*0.10,0,s*0.30);
-      g.addColorStop(0, lighten(col,0.20));
-      g.addColorStop(1, darken(col,0.08));
+      ctx.beginPath(); ctx.moveTo(0,-s*0.06);
+      ctx.bezierCurveTo(-s*0.22,-s*0.28,-s*0.22,s*0.08,0,s*0.38);
+      ctx.bezierCurveTo( s*0.22, s*0.08,  s*0.22,-s*0.28,0,-s*0.06);
+      const g=ctx.createLinearGradient(0,-s*0.10,0,s*0.38);
+      g.addColorStop(0,lighten(col,0.22)); g.addColorStop(1,darken(col,0.10));
       ctx.fillStyle=g; ctx.fill(); ctx.restore();
     }
-    // Tight inner curl
-    for (let i=0; i<6; i++) {
-      const a=(i/6)*Math.PI*2 - 0.15;
+    // Tight inner petals
+    for (let i=0; i<8; i++) {
+      const a=(i/8)*Math.PI*2-0.22;
       ctx.save(); ctx.rotate(a);
-      ctx.beginPath(); ctx.moveTo(0,-s*0.02);
-      ctx.bezierCurveTo(-s*0.10,-s*0.12,-s*0.12,s*0.04,0,s*0.16);
-      ctx.bezierCurveTo( s*0.12, s*0.04,  s*0.10,-s*0.12,0,-s*0.02);
-      ctx.fillStyle=lighten(col,0.38); ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.moveTo(0,-s*0.03);
+      ctx.bezierCurveTo(-s*0.12,-s*0.16,-s*0.14,s*0.04,0,s*0.20);
+      ctx.bezierCurveTo( s*0.14, s*0.04,  s*0.12,-s*0.16,0,-s*0.03);
+      ctx.fillStyle=lighten(col,0.40); ctx.fill(); ctx.restore();
     }
   }
 
-  // ── Blossom: small daisy/chamomile with yellow center ────────────
+  // ── Spray blossom: 5-petal simple flower ─────────────────────────
   function drawBlossom(col, s) {
-    for (let i=0; i<6; i++) {
-      const a=(i/6)*Math.PI*2 - Math.PI*0.5;
-      const px=Math.cos(a)*s*0.32, py=Math.sin(a)*s*0.32;
+    for (let i=0; i<5; i++) {
+      const a=(i/5)*Math.PI*2 - Math.PI*0.5;
+      const px=Math.cos(a)*s*0.35, py=Math.sin(a)*s*0.35;
       ctx.save();
       ctx.translate(px, py);
       ctx.rotate(a + Math.PI*0.5);
       ctx.beginPath();
-      ctx.ellipse(0, 0, s*0.22, s*0.34, 0, 0, Math.PI*2);
-      ctx.fillStyle = col;
-      ctx.fill(); ctx.restore();
+      ctx.ellipse(0, 0, s*0.25, s*0.36, 0, 0, Math.PI*2);
+      const g=ctx.createRadialGradient(0,-s*0.12,0,0,-s*0.12,s*0.36);
+      g.addColorStop(0,lighten(col,0.35)); g.addColorStop(1,col);
+      ctx.fillStyle=g; ctx.fill(); ctx.restore();
     }
-    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.14);
-    cg.addColorStop(0,'#fff8c0'); cg.addColorStop(0.6,'#f5d040'); cg.addColorStop(1,'#e0b020');
-    ctx.beginPath(); ctx.arc(0,0,s*0.13,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+    const cg=ctx.createRadialGradient(0,0,0,0,0,s*0.13);
+    cg.addColorStop(0,'#fff8c0'); cg.addColorStop(1,'#f0c840');
+    ctx.beginPath(); ctx.arc(0,0,s*0.12,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
   }
 
-  // ── Baby's breath: dense cloud of tiny white flowers ─────────────
+  // ── Baby's breath: delicate branching clusters ───────────────────
   function drawBabysBreath(cx, cy, spread) {
     if (spread <= 0) return;
-    const branches = 8;
-    const lenFracs = [0.70, 0.95, 0.60, 0.85, 0.75, 0.65, 0.80, 0.90];
-    // Simple dot clusters — avoid multi-arc petal pattern that looks like asterisks
+    const branches = 7;
+    const lenFracs = [0.72, 0.95, 0.62, 0.88, 0.78, 0.68, 0.82];
     const dotOffsets = [
-      [0, 0], [-0.50, 0.45], [0.48, 0.40],
-      [-0.25, 0.85], [0.28, 0.78], [0, 0.55],
+      [0, 0, 2.8], [-0.55, 0.48, 2.2], [0.52, 0.42, 2.0],
+      [-0.28, 0.88, 1.7], [0.30, 0.80, 1.6],
     ];
     for (let b = 0; b < branches; b++) {
-      const baseAngle = (b / branches) * Math.PI * 2 - 0.20;
+      const baseAngle = (b / branches) * Math.PI * 2 - 0.15;
       const blen = spread * lenFracs[b];
       const bx = cx + Math.cos(baseAngle) * blen;
       const by = cy + Math.sin(baseAngle) * blen;
-
+      // Sub-branch
+      const sbx = cx + Math.cos(baseAngle)*blen*0.55;
+      const sby = cy + Math.sin(baseAngle)*blen*0.55;
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by);
-      ctx.strokeStyle='rgba(100,135,85,0.28)'; ctx.lineWidth=0.65; ctx.stroke();
+      ctx.strokeStyle='rgba(110,145,90,0.30)'; ctx.lineWidth=0.7; ctx.stroke();
 
-      dotOffsets.forEach(([ox, oy]) => {
-        const da = baseAngle + ox * 0.60;
-        const dl = spread * (0.08 + oy * 0.05);
-        const fx = bx + Math.cos(da) * dl;
-        const fy = by + Math.sin(da) * dl;
-        // Single small filled circle — clean dot, no asterisk effect
-        ctx.beginPath();
-        ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,252,250,0.95)';
-        ctx.fill();
-        // Tiny yellow center dot
-        ctx.beginPath();
-        ctx.arc(fx, fy, 0.9, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff3c0';
-        ctx.fill();
+      dotOffsets.forEach(([ox, oy, dr]) => {
+        const da = baseAngle + ox * 0.65;
+        const dl = spread * (0.10 + oy * 0.055);
+        const dx = bx + Math.cos(da) * dl;
+        const dy = by + Math.sin(da) * dl;
+        // White flower
+        ctx.beginPath(); ctx.arc(dx, dy, dr, 0, Math.PI*2);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        // Petal detail
+        for (let p=0; p<5; p++) {
+          const pa=(p/5)*Math.PI*2;
+          ctx.beginPath();
+          ctx.arc(dx+Math.cos(pa)*dr*0.52, dy+Math.sin(pa)*dr*0.52, dr*0.42, 0, Math.PI*2);
+          ctx.fillStyle='rgba(255,252,250,0.85)'; ctx.fill();
+        }
+        // Yellow center
+        ctx.beginPath(); ctx.arc(dx, dy, dr*0.38, 0, Math.PI*2);
+        ctx.fillStyle='#ffe870'; ctx.fill();
       });
     }
   }
