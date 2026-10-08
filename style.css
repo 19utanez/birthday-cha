@@ -526,15 +526,14 @@ body {
 
 /* ─── Photo frame wrapper ────────────────────────────────────── */
 #photo-frame-wrap {
-  /* In-flow — takes space at the top of the flex column */
   position: relative;
   width: 100%;
-  /* Taller zone so frame sits lower, closing the gap above the bouquet */
-  height: 56dvh;
+  /* Photo takes up top 46% — leaves 54% for bouquet + message */
+  height: 46dvh;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 1dvh;
+  padding-bottom: 0.5dvh;
   pointer-events: none;
   z-index: 15;
   opacity: 0;
@@ -628,6 +627,8 @@ body {
   /* In-flow — sits below the bouquet area naturally */
   position: relative;
   width: 100%;
+  /* Top margin reserves space for the bouquet so it never overlaps */
+  margin-top: 18dvh;
   padding: clamp(0.5rem, 2vw, 1rem) clamp(1.2rem, 6vw, 2.2rem)
            calc(clamp(0.8rem, 2.5vw, 1.2rem) + env(safe-area-inset-bottom, 0px));
   display: flex;
