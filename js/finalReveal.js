@@ -690,8 +690,12 @@ const FinalRevealScene = (() => {
       // Move click-me btn into btn-row (after replay = right side)
       const clickBtn = document.getElementById('click-me-btn');
       if (clickBtn && row) {
-        // Always ensure it's last (right of replay)
         row.appendChild(clickBtn);
+        // Reset the offscreen parking — become in-flow inside btn-row
+        clickBtn.style.position = 'static';
+        clickBtn.style.top = 'auto';
+        clickBtn.style.left = 'auto';
+        clickBtn.style.display = 'flex';
       }
       if (clickBtn) {
         // Inject heartbeat keyframes once
@@ -950,11 +954,10 @@ const BouquetPopup = (() => {
   let openCount = 0;  // tracks how many times popup has been opened
 
   const CAPTIONS = [
-    '💕 for you, always 💕',
-    '🌸 wishing you all the happiness 🌸',
-    '✨ you deserve every beautiful thing ✨',
-    '🎀 happy birthday, my favorite person 🎀',
-    '🌷 sending you all my love today 🌷',
+    'happy birthday my fave chacha!',
+    'HAHHAAHHA ANGAS NO',
+    'HBDD BOSS KO :))',
+    'GOOD LUCKK CHARM 😚',
   ];
 
   // 5 bouquet color palettes that cycle per open
@@ -1018,7 +1021,8 @@ const BouquetPopup = (() => {
         cursor:pointer;
         opacity:0;
         pointer-events:none;
-        transition:opacity .5s ease, transform .18s ease, box-shadow .18s ease;
+        position:fixed; top:-9999px; left:-9999px;
+        transition:transform .18s ease, box-shadow .18s ease;
         flex-shrink:0;
       `;
       btn.onmouseenter = () => {
@@ -1029,7 +1033,7 @@ const BouquetPopup = (() => {
         btn.style.transform = 'scale(1)';
         btn.style.boxShadow = '0 2px 18px rgba(200,80,106,0.18), 0 0 0 1px rgba(212,175,106,0.25) inset';
       };
-      // Will be moved into btn-row by onMessageComplete; park in body for now
+      // Hidden until moved into btn-row by onMessageComplete
       document.body.appendChild(btn);
     }
 
