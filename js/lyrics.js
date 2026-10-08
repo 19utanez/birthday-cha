@@ -97,6 +97,8 @@ const LyricsScene = (() => {
     audio.load();
     // Init chiptune context (will be resumed on first gesture)
     initChiptune();
+    // Expose audio element so envelope.js can unlock it on first tap
+    window._birthdayAudio = audio;
   }
 
   function start() {
